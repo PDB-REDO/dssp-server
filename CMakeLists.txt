@@ -116,7 +116,7 @@ find_program(YARN yarn REQUIRED)
 add_executable(dsspd
 	${PROJECT_SOURCE_DIR}/src/dssp-server.cpp)
 
-target_link_libraries(dsspd PRIVATE dssp::dssp)
+target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio)
 
 # yarn rules for javascripts
 set(webpack_input
@@ -145,6 +145,7 @@ add_dependencies(dsspd generate_webpack)
 mrc_target_resources(dsspd
 	${CIFPP_SHARE_DIR}/mmcif_pdbx.dic
 	${CIFPP_SHARE_DIR}/mmcif_ddl.dic
+	${PROJECT_SOURCE_DIR}/dssp/mmcif_pdbx/dssp-extension.dic
 	${PROJECT_SOURCE_DIR}/docroot/)
 
 # Install rules

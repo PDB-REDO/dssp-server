@@ -5,3 +5,5 @@ node_modules
 docroot/fonts
 docroot/scripts
 docroot/css
+dsspd.conf
+src/revision.hpp

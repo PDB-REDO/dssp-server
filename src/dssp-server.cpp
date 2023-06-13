@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dssp-io.hpp"
+#include "dssp.hpp"
 
 #include "revision.hpp"
 
@@ -51,6 +51,7 @@ class dssp_html_controller : public zeep::http::html_controller
 		map_get("", "index");
 		map_get("about", "about");
 		map_get("download", "download");
+		map_get("license", "license");
 	}
 };
 
@@ -89,9 +90,12 @@ zeep::http::reply dssp_rest_controller::work(const zeep::http::file_param &coord
 	std::ostringstream os;
 
 	if (fmt == "dssp")
-		writeDSSP(dssp, os);
+		dssp.write_legacy_output(os);
 	else
-		annotateDSSP(f.front(), dssp, true, true, os);
+	{
+		dssp.annotate(f.front(), true, true);
+		os << f.front();
+	}
 
 	// --------------------------------------------------------------------
 	
@@ -132,6 +136,9 @@ int main(int argc, char *argv[])
 		mcfp::make_option<std::string>("context", "", "Root context for web server"),
 
 		mcfp::make_option("no-daemon,F", "Do not fork into background"),
+
+		mcfp::make_option<std::string>("pdb-dir", "Directory containing the PDB mmCIF files"),
+		mcfp::make_option<std::string>("dssp-dir", "Directory containing the DSSP databank files"),
 
 		mcfp::make_option<std::string>("config", "Config file to use"));
 
