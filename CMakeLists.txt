@@ -114,6 +114,7 @@ add_subdirectory(dssp EXCLUDE_FROM_ALL)
 find_program(YARN yarn REQUIRED)
 
 add_executable(dsspd
+	${PROJECT_SOURCE_DIR}/src/databank-service.cpp
 	${PROJECT_SOURCE_DIR}/src/dssp-server.cpp)
 
 target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio)

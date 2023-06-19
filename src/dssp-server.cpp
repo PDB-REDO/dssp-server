@@ -25,6 +25,7 @@
  */
 
 #include "dssp.hpp"
+#include "databank-service.hpp"
 
 #include "revision.hpp"
 
@@ -139,6 +140,7 @@ int main(int argc, char *argv[])
 
 		mcfp::make_option<std::string>("pdb-dir", "Directory containing the PDB mmCIF files"),
 		mcfp::make_option<std::string>("dssp-dir", "Directory containing the DSSP databank files"),
+		mcfp::make_option<unsigned>("update-threads", 1, "Number of update threads to run simultaneously"),
 
 		mcfp::make_option<std::string>("config", "Config file to use"));
 
@@ -182,12 +184,16 @@ int main(int argc, char *argv[])
 
 	cif::VERBOSE = config.count("verbose");
 
+	// --------------------------------------------------------------------
+
 	std::string user = config.get<std::string>("user");
 	std::string address = config.get<std::string>("address");
 	uint16_t port = config.get<uint16_t>("port");
 
 	zeep::http::daemon server([&, context = config.get("context")]()
 		{
+		databank_service::instance();
+
 		auto s = new zeep::http::server();
 
 #ifndef NDEBUG
@@ -212,7 +218,7 @@ int main(int argc, char *argv[])
 		if (config.has("no-daemon"))
 			result = server.run_foreground(address, port);
 		else
-			result = server.start(address, port, 2, 2, user);
+			result = server.start(address, port, 1, 10, user);
 	}
 	else if (command == "stop")
 		result = server.stop();
