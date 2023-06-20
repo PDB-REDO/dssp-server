@@ -1,4 +1,5 @@
 # Configuration file for dsspd
 # pdb-dir=/srv/data/pdb/mmCIF/
 # dssp-dir=/srv/data/dssp/
+# legacy-dssp-dir=/srv/data/dssp-legacy/
 # update-threads=4

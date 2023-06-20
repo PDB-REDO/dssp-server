@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
 
 		mcfp::make_option<std::string>("pdb-dir", "Directory containing the PDB mmCIF files"),
 		mcfp::make_option<std::string>("dssp-dir", "Directory containing the DSSP databank files"),
+		mcfp::make_option<std::string>("legacy-dssp-dir", "Directory containing the DSSP databank files in legacy format"),
 		mcfp::make_option<unsigned>("update-threads", 1, "Number of update threads to run simultaneously"),
 
 		mcfp::make_option<std::string>("config", "Config file to use"));

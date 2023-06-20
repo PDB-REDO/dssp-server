@@ -52,9 +52,11 @@ class databank_service
 
 	std::filesystem::path get_pdb_file_for_pdb_id(const std::string &pdb_id) const;
 	std::filesystem::path get_dssp_file_for_pdb_id(const std::string &pdb_id) const;
+	std::filesystem::path get_legacy_dssp_file_for_pdb_id(const std::string &pdb_id) const;
 
 	std::filesystem::path m_pdb_dir;
 	std::filesystem::path m_dssp_dir;
+	std::filesystem::path m_legacy_dssp_dir;
 
 	int m_inotify_fd;
 	bool m_stop = false;

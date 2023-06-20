@@ -109,7 +109,11 @@ if(NOT PDB_REDO_META)
 	find_package(gxrio REQUIRED)
 endif()
 
-add_subdirectory(dssp EXCLUDE_FROM_ALL)
+find_package(dssp QUIET)
+
+if(NOT dssp_FOUND)
+	add_subdirectory(dssp EXCLUDE_FROM_ALL)
+endif()
 
 find_program(YARN yarn REQUIRED)
 

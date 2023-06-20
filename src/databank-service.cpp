@@ -58,6 +58,20 @@ databank_service::databank_service()
 		exit(1);
 	}
 
+	if (config.has("legacy-dssp-dir"))
+	{
+		m_legacy_dssp_dir = config.get("legacy-dssp-dir");
+
+		if (not fs::exists(m_legacy_dssp_dir, ec))
+			fs::create_directories(m_legacy_dssp_dir, ec);
+
+		if (ec)
+		{
+			std::cerr << "Failed to create DSSP databank directory " << m_legacy_dssp_dir << std::endl;
+			exit(1);
+		}
+	}
+
 	unsigned nrOfThreads = config.get<unsigned>("update-threads");
 
 	for (unsigned i = 0; i < nrOfThreads; ++i)
@@ -168,6 +182,45 @@ void databank_service::run()
 				std::cerr << "Error creating " << dssp_file.string() << ": " << ex.what() << std::endl;
 				fs::remove(dssp_file, ec);
 			}
+
+			// legacy file?
+			auto legacy_dssp_file = get_legacy_dssp_file_for_pdb_id(next.pdb_id);
+			if (not calculateSurface or legacy_dssp_file.empty())
+				continue;
+
+			if (not fs::exists(legacy_dssp_file.parent_path(), ec))
+				fs::create_directories(legacy_dssp_file.parent_path(), ec);
+
+			if (ec)
+				throw std::runtime_error("Could not create directory for DSSP file " + legacy_dssp_file.string());
+
+			auto legacy_dssp_tmp_file = legacy_dssp_file.parent_path() / (legacy_dssp_file.filename().string() + ".tmp");
+
+			std::ofstream outDssp(legacy_dssp_tmp_file);
+
+			if (not outDssp.is_open())
+				throw std::runtime_error("Could not create DSSP file " + legacy_dssp_tmp_file.string());
+
+			try
+			{
+				dssp.write_legacy_output(outDssp);
+				outDssp.close();
+
+				fs::remove(legacy_dssp_file, ec);
+				if (ec)
+					throw std::runtime_error("Could not remove old DSSP databank file " + legacy_dssp_file.string());
+
+				fs::rename(legacy_dssp_tmp_file, legacy_dssp_file, ec);
+
+				if (ec)
+					throw std::runtime_error("Could not rename old DSSP databank temp file");
+			}
+			catch (const std::exception &ex)
+			{
+				std::cerr << "Error creating " << legacy_dssp_file.string() << ": " << ex.what() << std::endl;
+				fs::remove(dssp_file, ec);
+			}
+			
 		}
 		catch (const std::exception &ex)
 		{
@@ -210,6 +263,11 @@ fs::path databank_service::get_pdb_file_for_pdb_id(const std::string &pdb_id) co
 fs::path databank_service::get_dssp_file_for_pdb_id(const std::string &pdb_id) const
 {
 	return m_dssp_dir / pdb_id.substr(1, 2) / (pdb_id + ".cif.gz");
+}
+
+fs::path databank_service::get_legacy_dssp_file_for_pdb_id(const std::string &pdb_id) const
+{
+	return m_legacy_dssp_dir.empty() ? fs::path{} : m_legacy_dssp_dir / pdb_id.substr(1, 2) / (pdb_id + ".dssp");
 }
 
 bool databank_service::needs_update(const std::string &pdb_id) const
