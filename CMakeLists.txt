@@ -150,10 +150,11 @@ add_dependencies(dsspd generate_webpack)
 mrc_target_resources(dsspd
 	${CIFPP_SHARE_DIR}/mmcif_pdbx.dic
 	${CIFPP_SHARE_DIR}/mmcif_ddl.dic
-	${PROJECT_SOURCE_DIR}/dssp/mmcif_pdbx/dssp-extension.dic
+	${CIFPP_SHARE_DIR}/dssp-extension.dic
 	${PROJECT_SOURCE_DIR}/docroot/)
 
 # Install rules
 install(TARGETS dsspd
 	EXPORT dsspTargets
 	RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
+
