@@ -147,6 +147,10 @@ add_custom_target(generate_webpack DEPENDS ${webpack_output})
 
 add_dependencies(dsspd generate_webpack)
 
+if(NOT DEFINED DSSP_SHARE_DIR)
+	set(DSSP_SHARE_DIR ${CIFPP_SHARE_DIR})
+endif()
+
 mrc_target_resources(dsspd
 	${CIFPP_SHARE_DIR}/mmcif_pdbx.dic
 	${CIFPP_SHARE_DIR}/mmcif_ddl.dic
