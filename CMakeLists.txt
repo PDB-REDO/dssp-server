@@ -113,8 +113,6 @@ if(NOT PDB_REDO_META)
 	if(NOT dssp_FOUND)
 		add_subdirectory(dssp EXCLUDE_FROM_ALL)
 	endif()
-elseif(NOT ${DSSP_EXTENSIONS_DIC})
-	set(DSSP_EXTENSIONS_DIC "${CIFPP_SHARE_DIR}/dssp-extensions.dic")
 endif()
 
 find_program(YARN yarn REQUIRED)
@@ -152,7 +150,7 @@ add_dependencies(dsspd generate_webpack)
 mrc_target_resources(dsspd
 	${CIFPP_SHARE_DIR}/mmcif_pdbx.dic
 	${CIFPP_SHARE_DIR}/mmcif_ddl.dic
-	${CIFPP_SHARE_DIR}/dssp-extension.dic
+	${DSSP_SHARE_DIR}/dssp-extension.dic
 	${PROJECT_SOURCE_DIR}/docroot/)
 
 # Install rules
