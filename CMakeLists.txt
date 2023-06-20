@@ -107,12 +107,14 @@ if(NOT PDB_REDO_META)
 
 	find_package(zeep REQUIRED)
 	find_package(gxrio REQUIRED)
-endif()
-
-find_package(dssp QUIET)
-
-if(NOT dssp_FOUND)
-	add_subdirectory(dssp EXCLUDE_FROM_ALL)
+	
+	find_package(dssp QUIET)
+	
+	if(NOT dssp_FOUND)
+		add_subdirectory(dssp EXCLUDE_FROM_ALL)
+	endif()
+elseif(NOT ${DSSP_EXTENSIONS_DIC})
+	set(DSSP_EXTENSIONS_DIC "${CIFPP_SHARE_DIR}/dssp-extensions.dic")
 endif()
 
 find_program(YARN yarn REQUIRED)
