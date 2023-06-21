@@ -250,11 +250,11 @@ void databank_service::scan()
 
 		n.replace_extension();
 
+		check_ref_info(n.string());
+
 		// So n should now be the pdb_id, right?
 		if (not needs_update(n.string()))
 			continue;
-
-		check_ref_info(n.string());
 
 		m_queue.emplace(n, fs::last_write_time(p));
 	}
