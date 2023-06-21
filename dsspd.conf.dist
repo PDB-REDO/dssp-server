@@ -3,3 +3,8 @@
 # dssp-dir=/srv/data/dssp/
 # legacy-dssp-dir=/srv/data/dssp-legacy/
 # update-threads=4
+# db-dbname=dssp-db
+# db-user=dssp-admin
+# db-password=*********
+# db-host=localhost
+# db-port=5432

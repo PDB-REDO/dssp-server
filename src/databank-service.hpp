@@ -42,6 +42,8 @@ class databank_service
 
 	void submit_db_request(const std::string &pdb_id);
 
+	void check_ref_info(const std::string &pdb_id) const;
+
   private:
 	databank_service();
 

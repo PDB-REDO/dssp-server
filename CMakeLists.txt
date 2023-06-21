@@ -37,6 +37,7 @@ include(CMakePackageConfigHelpers)
 include(Dart)
 include(FindFilesystem)
 include(GenerateExportHeader)
+include(FindPkgConfig)
 
 set(CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
@@ -115,13 +116,22 @@ if(NOT PDB_REDO_META)
 	endif()
 endif()
 
+# For the databank
+find_package(date)
+pkg_check_modules(PQ libpq REQUIRED IMPORTED_TARGET)
+pkg_check_modules(PQXX libpqxx>=7.2 REQUIRED IMPORTED_TARGET)
+pkg_check_modules(SSL libssl IMPORTED_TARGET)
+pkg_check_modules(CRYPTO libcrypto IMPORTED_TARGET)
+
 find_program(YARN yarn REQUIRED)
 
 add_executable(dsspd
 	${PROJECT_SOURCE_DIR}/src/databank-service.cpp
+	${PROJECT_SOURCE_DIR}/src/db-connection.cpp
 	${PROJECT_SOURCE_DIR}/src/dssp-server.cpp)
 
-target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio)
+target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio
+	PkgConfig::PQXX PkgConfig::PQ PkgConfig::SSL PkgConfig::CRYPTO date::date)
 
 # yarn rules for javascripts
 set(webpack_input

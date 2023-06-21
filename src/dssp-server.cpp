@@ -26,6 +26,7 @@
 
 #include "dssp.hpp"
 #include "databank-service.hpp"
+#include "db-connection.hpp"
 
 #include "revision.hpp"
 
@@ -143,6 +144,12 @@ int main(int argc, char *argv[])
 		mcfp::make_option<std::string>("legacy-dssp-dir", "Directory containing the DSSP databank files in legacy format"),
 		mcfp::make_option<unsigned>("update-threads", 1, "Number of update threads to run simultaneously"),
 
+		mcfp::make_option<std::string>("db-dbname", "dssp-db name"),
+		mcfp::make_option<std::string>("db-user", "dssp-db owner"),
+		mcfp::make_option<std::string>("db-password", "dssp-db password"),
+		mcfp::make_option<std::string>("db-host", "dssp-db host"),
+		mcfp::make_option<std::string>("db-port", "dssp-db port"),
+
 		mcfp::make_option<std::string>("config", "Config file to use"));
 
 	std::error_code ec;
@@ -192,7 +199,8 @@ int main(int argc, char *argv[])
 	uint16_t port = config.get<uint16_t>("port");
 
 	zeep::http::daemon server([&, context = config.get("context")]()
-		{
+	{
+		db_connection::init();
 		databank_service::instance();
 
 		auto s = new zeep::http::server();
@@ -207,8 +215,8 @@ int main(int argc, char *argv[])
 
 		s->set_context_name(context);
 
-		return s; },
-		kProjectName);
+		return s;
+	}, kProjectName);
 
 	std::string command = config.operands().front();
 

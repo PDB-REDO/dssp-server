@@ -25,7 +25,10 @@
  */
 
 #include "databank-service.hpp"
+#include "db-connection.hpp"
 #include "dssp.hpp"
+
+#include <cif++.hpp>
 
 #include <mcfp.hpp>
 
@@ -251,6 +254,8 @@ void databank_service::scan()
 		if (not needs_update(n.string()))
 			continue;
 
+		check_ref_info(n.string());
+
 		m_queue.emplace(n, fs::last_write_time(p));
 	}
 }
@@ -277,4 +282,54 @@ bool databank_service::needs_update(const std::string &pdb_id) const
 
 	return fs::exists(pdb_file) and
 	       (not fs::exists(dssp_file) or fs::last_write_time(pdb_file) > fs::last_write_time(dssp_file));
+}
+
+// --------------------------------------------------------------------
+
+void databank_service::check_ref_info(const std::string &pdb_id) const
+{
+	using namespace std::chrono;
+	using namespace std::literals;
+
+	auto pdb_file = get_pdb_file_for_pdb_id(pdb_id);
+	if (not fs::exists(pdb_file))
+		return;
+
+	auto ft = fs::last_write_time(pdb_file);
+	auto scft = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
+
+	pqxx::transaction tx(db_connection::instance());
+	auto r = tx.exec(R"(SELECT trim(both '"' from to_json(file_date)::text) AS file_date FROM pdb_file WHERE id = )" + tx.quote(pdb_id));
+
+	bool needsUpdate = r.empty();
+	if (not needsUpdate)
+	{
+		auto file_date = parse_timestamp(r.front()[0].as<std::string>());
+		needsUpdate = (scft - file_date) > 24h;
+	}
+
+	if (needsUpdate)
+	{
+		using namespace cif::literals;
+
+		cif::file f(pdb_file);
+		auto &db = f.front();
+
+		tx.exec(R"(DELETE FROM pdb_file WHERE id = )" + tx.quote(pdb_id));
+
+		auto v_t = std::chrono::system_clock::to_time_t(scft);
+		std::ostringstream ss;
+		ss << std::put_time(std::localtime(&v_t), "[%FT%T%z]");
+
+		tx.exec(R"(INSERT INTO pdb_file (id, file_date) VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(ss.str()) + ")");
+
+		for (const auto &[db_code, db_name, acc] : db["struct_ref"].rows<std::string,std::string,std::string>("db_code", "db_name", "pdbx_db_accession"))
+		{
+			tx.exec0(
+				R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
+				VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())");
+		}
+	}
+
+	tx.commit();
 }
