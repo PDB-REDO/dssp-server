@@ -80,7 +80,9 @@ zeep::http::reply dssp_html_controller::get(const zeep::http::scope& scope, std:
 
 	zeep::http::reply rep(zeep::http::ok, {1, 1});
 
-	if (get_header("accept-encoding").find("gzip") != std::string::npos)
+	if (file.extension() != ".gz")
+		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
+	else if (get_header("accept-encoding").find("gzip") != std::string::npos)
 	{
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
 		rep.set_header("content-encoding", "gzip");
