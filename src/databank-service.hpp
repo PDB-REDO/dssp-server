@@ -44,6 +44,16 @@ class databank_service
 
 	void check_ref_info(const std::string &pdb_id) const;
 
+	std::filesystem::path get(const std::string &pdb_id, const std::string &format)
+	{
+		if (format == "dssp")
+			return get_legacy_dssp_file_for_pdb_id(pdb_id);
+		else if (format == "mmcif")
+			return get_dssp_file_for_pdb_id(pdb_id);
+		else
+			return {};
+	}
+
   private:
 	databank_service();
 

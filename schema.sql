@@ -1,5 +1,5 @@
-drop table if exists pdb_file;
-drop table if exists pdb_db_ref;
+drop table if exists pdb_db_ref cascade;
+drop table if exists pdb_file cascade;
 
 create table pdb_file (
 	id varchar primary key,
@@ -17,3 +17,6 @@ create table pdb_db_ref (
 create index pdb_db_ref_ix_1 on pdb_db_ref(pdb_id);
 create index pdb_db_ref_ix_2 on pdb_db_ref(db_name);
 create index pdb_db_ref_ix_3 on pdb_db_ref(db_accession);
+
+alter table pdb_db_ref owner to "dssp-admin";
+alter table pdb_file owner to "dssp-admin";

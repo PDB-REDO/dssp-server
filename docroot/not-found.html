@@ -1,0 +1,31 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat" [ <!ENTITY nbsp "&#160;">
+]>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>DSSP</title>
+</head>
+
+<body class="site">
+	<nav z2:replace="~{menu :: navbar('home')}"></nav>
+
+	<div class="container site-content">
+
+		<article>
+			<h3>Not found</h3>
+
+			<p>The entry <em z2:text="${pdb-id}"></em> was not found. The reason may be that there was no
+				PDB entry with that ID, or that is hasn't been processed yet.
+			</p>
+		</article>
+
+	</div>
+
+	<footer z2:replace="~{footer::content}"></footer>
+</body>
+
+</html>

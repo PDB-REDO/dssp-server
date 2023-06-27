@@ -18,20 +18,53 @@
 		<article>
 			<h2>DSSP: Assign secondary structure to proteins</h2>
 
-			<p>DSSP (Dictionary of Secondary Structure in Proteins) is an algorithm originally designed by Wolfgang Kabsch and Chris Sander to standardise secondary structure assigment based on atomic coordinates. DSSP does not predict secondary structure. You can run DSSP using the form below or you can <a z2:href="@{/download}">install</a> the program locally. Ready-made annotations of PDB entries are available below and you can also <a z2:href="@{/download}">download</a> the whole databank at once. More details about the DSSP output are <a z2:href="@{/about}">here</a>.  
+			<p>DSSP (Dictionary of Secondary Structure in Proteins) is an algorithm originally designed by Wolfgang
+				Kabsch and Chris Sander to standardise secondary structure assigment based on atomic coordinates. DSSP
+				does not predict secondary structure. You can run DSSP using the form below or you can <a
+					z2:href="@{/download}">install</a> the program locally. Ready-made annotations of PDB entries are
+				available below and you can also <a z2:href="@{/download}">download</a> the whole databank at once. More
+				details about the DSSP output are <a z2:href="@{/about}">here</a>.
 			</p>
 		</article>
 
 		<article>
-			<h2>Submit your structure</h2>
+			<h3>Databank</h3>
+
+			<p>Use the following form to retrieve a databank entry.</p>
+
+			<form z2:fragment="submit-form" name="job-form" z2:action="@{/get}">
+
+				<div class="input-group mb-3">
+					<span class="input-group-text" id="search-af">PDB-ID</span>
+					<input type="text" class="form-control" placeholder="Enter PDB identifier" aria-label="PDB-ID"
+						name="pdb-id" aria-describedby="search-af" />
+				</div>
+
+				<div class="input-group mb-3">
+					<label class="input-group-text" for="format-select">Format</label>
+					<select class="form-select" id="format-select" name="format">
+						<option value="mmcif">Annotated mmCIF</option>
+						<option value="dssp">Legacy DSSP format, may fail on larger structures</option>
+					</select>
+				</div>
+
+				<button type="submit" class="btn btn-sm btn-primary mt-3">Submit</button>
+			</form>
+		</article>
+		<article>
+			<h3>Custom coordinates</h3>
+
+			<p>Use the following form to submit your own coordinates file. Accepted formats are mmCIF and PDB,
+				optionally compressed using gzip.</p>
 
 			<form z2:fragment="submit-form" name="job-form" method="post" enctype="multipart/form-data"
 				z2:action="@{/do}">
-				<div class="input-group mb-3">
-					<label class="input-group-text" for="input-group-pdb-file">Coordinates</label>
-					<input type="file" class="form-control" id="input-group-pdb-file" name="data" required="required" />
-				</div>
 
+				<div class="input-group mb-3">
+					<input type="file" class="form-control" id="input-group-pdb-file" name="data"
+						aria-describedby="upload-btn" aria-label="Coordinates" />
+					<!-- <label class="input-group-text" for="input-group-pdb-file">Coordinates</label> -->
+				</div>
 
 				<div class="input-group mb-3">
 					<label class="input-group-text" for="format-select">Format</label>
