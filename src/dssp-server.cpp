@@ -58,10 +58,109 @@ class dssp_html_controller : public zeep::http::html_controller
 		map_get("license", "license");
 		
 		map_get("get", &dssp_html_controller::get, "pdb-id", "format");
+
+		map_get("db/{pdb-id}", &dssp_html_controller::db_mmcif, "pdb-id");
+		map_get("db/{pdb-id}/mmcif", &dssp_html_controller::db_mmcif, "pdb-id");
+		map_get("db/{pdb-id}/legacy", &dssp_html_controller::db_legacy, "pdb-id");
 	}
 
 	zeep::http::reply get(const zeep::http::scope& scope, std::string pdb_id, std::optional<std::string> format);
+
+	zeep::http::reply db_mmcif(const zeep::http::scope& scope, std::string pdb_id);
+	zeep::http::reply db_legacy(const zeep::http::scope& scope, std::string pdb_id);
 };
+
+zeep::http::reply dssp_html_controller::db_mmcif(const zeep::http::scope& scope, std::string pdb_id)
+{
+	auto file = databank_service::instance().get(pdb_id, "mmcif");
+
+	if (not fs::exists(file))
+	{
+		zeep::http::scope sub(scope);
+
+		sub.put("pdb-id", pdb_id);
+		auto reply = get_template_processor().create_reply_from_template("not-found", sub);
+
+		reply.set_status(zeep::http::not_found);
+		return reply;
+	}
+
+	zeep::http::reply rep(zeep::http::ok, {1, 1});
+
+	if (file.extension() != ".gz")
+		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
+	else if (get_header("accept-encoding").find("gzip") != std::string::npos)
+	{
+		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
+		rep.set_header("content-encoding", "gzip");
+	}
+	else
+	{
+		cif::gzio::ifstream in(file);
+
+		if (not in.is_open())
+			return zeep::http::reply(zeep::http::not_found, {1, 1});
+		
+		std::stringstream os;
+		os << in.rdbuf();
+
+		rep.set_content(os.str(), "text/plain");
+
+		if (rep.get_content().empty())
+			throw std::runtime_error("Databank file is corrupt");
+	}
+
+	std::string filename = pdb_id + ".cif";
+	rep.set_header("content-disposition", "attachement; filename = \"" + filename + '\"');
+
+	return rep;
+}
+
+zeep::http::reply dssp_html_controller::db_legacy(const zeep::http::scope& scope, std::string pdb_id)
+{
+	auto file = databank_service::instance().get(pdb_id, "dssp");
+
+	if (not fs::exists(file))
+	{
+		zeep::http::scope sub(scope);
+
+		sub.put("pdb-id", pdb_id);
+		auto reply = get_template_processor().create_reply_from_template("not-found", sub);
+
+		reply.set_status(zeep::http::not_found);
+		return reply;
+	}
+
+	zeep::http::reply rep(zeep::http::ok, {1, 1});
+
+	if (file.extension() != ".gz")
+		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
+	else if (get_header("accept-encoding").find("gzip") != std::string::npos)
+	{
+		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
+		rep.set_header("content-encoding", "gzip");
+	}
+	else
+	{
+		cif::gzio::ifstream in(file);
+
+		if (not in.is_open())
+			return zeep::http::reply(zeep::http::not_found, {1, 1});
+		
+		std::stringstream os;
+		os << in.rdbuf();
+
+		rep.set_content(os.str(), "text/plain");
+
+		if (rep.get_content().empty())
+			throw std::runtime_error("Databank file is corrupt");
+	}
+
+	std::string filename = pdb_id + ".dssp";
+	rep.set_header("content-disposition", "attachement; filename = \"" + filename + '\"');
+
+	return rep;
+}
 
 zeep::http::reply dssp_html_controller::get(const zeep::http::scope& scope, std::string pdb_id, std::optional<std::string> format)
 {
@@ -108,7 +207,6 @@ zeep::http::reply dssp_html_controller::get(const zeep::http::scope& scope, std:
 
 	return rep;
 }
-
 
 // --------------------------------------------------------------------
 

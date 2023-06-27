@@ -95,7 +95,7 @@ class databank_service
 
 		bool operator<(const entry &rhs) const
 		{
-			return timestamp < rhs.timestamp;
+			return timestamp > rhs.timestamp;
 		}
 	};
 
