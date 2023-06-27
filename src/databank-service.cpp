@@ -146,7 +146,7 @@ void databank_service::run()
 			}
 
 			std::cerr << "processing " << next.pdb_id << std::endl;
-			dssp dssp(f.front(), 1, 3, calculateSurface);
+			dssp dssp(db, 1, 3, calculateSurface);
 
 			auto dssp_file = get_dssp_file_for_pdb_id(next.pdb_id);
 			std::error_code ec;
@@ -166,10 +166,9 @@ void databank_service::run()
 
 			try
 			{
-				dssp.annotate(f.front(), true, true);
-				outCif << f.front();
+				dssp.annotate(db, true, true);
+				outCif << db;
 
-				outCif.flush();
 				outCif.close();
 
 				fs::remove(dssp_file, ec);
@@ -186,6 +185,8 @@ void databank_service::run()
 				std::cerr << "Error creating " << dssp_file.string() << ": " << ex.what() << std::endl;
 				fs::remove(dssp_file, ec);
 			}
+
+			update_db_ref(db);
 
 			// legacy file?
 			auto legacy_dssp_file = get_legacy_dssp_file_for_pdb_id(next.pdb_id);
@@ -251,13 +252,11 @@ void databank_service::scan()
 
 		n.replace_extension();
 
-		check_ref_info(n.string());
-
 		// So n should now be the pdb_id, right?
-		if (not needs_update(n.string()))
-			continue;
-
-		m_queue.emplace(n, fs::last_write_time(p));
+		if (needs_update(n.string()))
+			m_queue.emplace(n, fs::last_write_time(p));
+		else
+			update_db_ref(p, n);
 	}
 }
 
@@ -287,14 +286,10 @@ bool databank_service::needs_update(const std::string &pdb_id) const
 
 // --------------------------------------------------------------------
 
-void databank_service::check_ref_info(const std::string &pdb_id) const
+void databank_service::update_db_ref(const std::filesystem::path &pdb_file, const std::string &pdb_id)
 {
 	using namespace std::chrono;
 	using namespace std::literals;
-
-	auto pdb_file = get_pdb_file_for_pdb_id(pdb_id);
-	if (not fs::exists(pdb_file))
-		return;
 
 	auto ft = fs::last_write_time(pdb_file);
 	auto scft = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
@@ -309,28 +304,53 @@ void databank_service::check_ref_info(const std::string &pdb_id) const
 		needsUpdate = (scft - file_date) > 24h;
 	}
 
-	// if (needsUpdate)
-	// {
-	// 	using namespace cif::literals;
+	tx.commit();
 
-	// 	cif::file f(pdb_file);
-	// 	auto &db = f.front();
+	if (needsUpdate)
+	{
+		try
+		{
+			cif::file f(pdb_file);
+			update_db_ref(f.front());
+		}
+		catch (const std::exception &ex)
+		{
+			std::cerr << "Error processing " << pdb_file << ": " << ex.what() << std::endl;
+		}
+	}
+}
 
-	// 	tx.exec(R"(DELETE FROM pdb_file WHERE id = )" + tx.quote(pdb_id));
+void databank_service::update_db_ref(const cif::datablock &db)
+{
+	using namespace std::chrono;
+	using namespace std::literals;
+	using namespace cif::literals;
 
-	// 	auto v_t = std::chrono::system_clock::to_time_t(scft);
-	// 	std::ostringstream ss;
-	// 	ss << std::put_time(std::localtime(&v_t), "[%FT%T%z]");
+	auto pdb_id = db.name();
+	cif::to_lower(pdb_id);
 
-	// 	tx.exec(R"(INSERT INTO pdb_file (id, file_date) VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(ss.str()) + ")");
+	auto pdb_file = get_pdb_file_for_pdb_id(pdb_id);
+	if (not fs::exists(pdb_file))
+		return;
 
-	// 	for (const auto &[db_code, db_name, acc] : db["struct_ref"].rows<std::string,std::string,std::string>("db_code", "db_name", "pdbx_db_accession"))
-	// 	{
-	// 		tx.exec0(
-	// 			R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
-	// 			VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())");
-	// 	}
-	// }
+	auto ft = fs::last_write_time(pdb_file);
+	auto scft = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
+
+	pqxx::transaction tx(db_connection::instance());
+	tx.exec(R"(DELETE FROM pdb_file WHERE id = )" + tx.quote(pdb_id));
+
+	auto v_t = std::chrono::system_clock::to_time_t(scft);
+	std::ostringstream ss;
+	ss << std::put_time(std::localtime(&v_t), "[%FT%T%z]");
+
+	tx.exec(R"(INSERT INTO pdb_file (id, file_date) VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(ss.str()) + ")");
+
+	for (const auto &[db_code, db_name, acc] : db["struct_ref"].rows<std::string,std::string,std::string>("db_code", "db_name", "pdbx_db_accession"))
+	{
+		tx.exec0(
+			R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
+			VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())");
+	}
 
 	tx.commit();
 }

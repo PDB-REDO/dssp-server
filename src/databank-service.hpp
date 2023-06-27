@@ -33,6 +33,8 @@
 #include <queue>
 #include <thread>
 
+#include <cif++.hpp>
+
 class databank_service
 {
   public:
@@ -42,7 +44,7 @@ class databank_service
 
 	void submit_db_request(const std::string &pdb_id);
 
-	void check_ref_info(const std::string &pdb_id) const;
+	// void check_ref_info(const std::string &pdb_id) const;
 
 	std::filesystem::path get(const std::string &pdb_id, const std::string &format)
 	{
@@ -61,6 +63,9 @@ class databank_service
 	void scan();
 
 	bool needs_update(const std::string &pdb_id) const;
+
+	void update_db_ref(const cif::datablock &db);
+	void update_db_ref(const std::filesystem::path &pdb_file, const std::string &pdb_id);
 
 	std::filesystem::path get_pdb_file_for_pdb_id(const std::string &pdb_id) const;
 	std::filesystem::path get_dssp_file_for_pdb_id(const std::string &pdb_id) const;
