@@ -5,7 +5,7 @@
 <body>
 
 	<header z2:fragment="navbar(page)" class="d-flex">
-		<a href="https://pdb-redo.eu/"><img z2:src="@{/images/PDB_logo_rect_medium.svg}" /></a>
+		<a href="https://pdb-redo.eu/dssp"><img z2:src="@{/images/dssp-logo.svg}" /></a>
 		<div>
 			<div class="my-overflow">
 
@@ -59,6 +59,12 @@
 							<a class="nav-link" z2:classappend="${page == 'download' ? 'active' : ''}"
 								z2:href="@{/download}">Download</a>
 						</li>
+
+						<li class="nav-item">
+							<a class="nav-link" z2:classappend="${page == 'license' ? 'active' : ''}"
+								z2:href="@{/license}">License</a>
+						</li>
+
 
 					</ul>
 				</div>
