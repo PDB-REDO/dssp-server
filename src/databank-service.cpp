@@ -334,3 +334,19 @@ void databank_service::check_ref_info(const std::string &pdb_id) const
 
 	tx.commit();
 }
+
+// --------------------------------------------------------------------
+
+std::vector<std::string> databank_service::get_pdb_ids_for_code_or_acc(const std::string &acc) const
+{
+	pqxx::transaction tx(db_connection::instance());
+
+	std::vector<std::string> result;
+
+	for (const auto &[pdb_id] : tx.stream<std::string>(R"(SELECT pdb_id FROM pdb_db_ref WHERE db_code = )" + tx.quote(acc) + R"( OR db_accession = )" + tx.quote(acc)))
+		result.emplace_back(pdb_id);
+	
+	tx.commit();
+
+	return result;
+}
