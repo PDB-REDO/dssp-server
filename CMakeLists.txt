@@ -118,10 +118,7 @@ endif()
 
 # For the databank
 find_package(date)
-pkg_check_modules(PQ libpq REQUIRED IMPORTED_TARGET)
-pkg_check_modules(PQXX libpqxx>=7.2 REQUIRED IMPORTED_TARGET)
-pkg_check_modules(SSL libssl IMPORTED_TARGET)
-pkg_check_modules(CRYPTO libcrypto IMPORTED_TARGET)
+find_package(libpqxx 7.8.1 REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
@@ -131,7 +128,7 @@ add_executable(dsspd
 	${PROJECT_SOURCE_DIR}/src/dssp-server.cpp)
 
 target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio
-	PkgConfig::PQXX PkgConfig::PQ PkgConfig::SSL PkgConfig::CRYPTO date::date)
+	libpqxx::pqxx date::date)
 
 # yarn rules for javascripts
 set(webpack_input

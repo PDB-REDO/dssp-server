@@ -251,11 +251,12 @@ void databank_service::scan()
 
 		n.replace_extension();
 
-		check_ref_info(n.string());
-
 		// So n should now be the pdb_id, right?
 		if (not needs_update(n.string()))
+		{
+			check_ref_info(n.string());
 			continue;
+		}
 
 		m_queue.emplace(n, fs::last_write_time(p));
 	}
@@ -309,44 +310,54 @@ void databank_service::check_ref_info(const std::string &pdb_id) const
 		needsUpdate = (scft - file_date) > 24h;
 	}
 
-	// if (needsUpdate)
-	// {
-	// 	using namespace cif::literals;
+	if (needsUpdate)
+	{
+		using namespace cif::literals;
 
-	// 	cif::file f(pdb_file);
-	// 	auto &db = f.front();
+		cif::file f(pdb_file);
+		auto &db = f.front();
 
-	// 	tx.exec(R"(DELETE FROM pdb_file WHERE id = )" + tx.quote(pdb_id));
+		tx.exec(R"(DELETE FROM pdb_file WHERE id = )" + tx.quote(pdb_id));
 
-	// 	auto v_t = std::chrono::system_clock::to_time_t(scft);
-	// 	std::ostringstream ss;
-	// 	ss << std::put_time(std::localtime(&v_t), "[%FT%T%z]");
+		auto v_t = std::chrono::system_clock::to_time_t(scft);
+		std::ostringstream ss;
+		ss << std::put_time(std::localtime(&v_t), "[%FT%T%z]");
 
-	// 	tx.exec(R"(INSERT INTO pdb_file (id, file_date) VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(ss.str()) + ")");
+		tx.exec(R"(INSERT INTO pdb_file (id, file_date) VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(ss.str()) + ")");
 
-	// 	for (const auto &[db_code, db_name, acc] : db["struct_ref"].rows<std::string,std::string,std::string>("db_code", "db_name", "pdbx_db_accession"))
-	// 	{
-	// 		tx.exec0(
-	// 			R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
-	// 			VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())");
-	// 	}
-	// }
+		for (const auto &[db_code, db_name, acc] : db["struct_ref"].rows<std::string,std::string,std::string>("db_code", "db_name", "pdbx_db_accession"))
+		{
+			tx.exec0(
+				R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
+				VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())");
+		}
+	}
 
 	tx.commit();
 }
 
 // --------------------------------------------------------------------
 
-std::vector<std::string> databank_service::get_pdb_ids_for_code_or_acc(const std::string &acc) const
+std::tuple<std::string,std::string,std::vector<std::string>>
+databank_service::get_pdb_ids_for_code_or_acc(const std::string &acc) const
 {
 	pqxx::transaction tx(db_connection::instance());
 
-	std::vector<std::string> result;
+	std::vector<std::string> ids;
 
-	for (const auto &[pdb_id] : tx.stream<std::string>(R"(SELECT pdb_id FROM pdb_db_ref WHERE db_code = )" + tx.quote(acc) + R"( OR db_accession = )" + tx.quote(acc)))
-		result.emplace_back(pdb_id);
+	auto r = tx.exec(R"(SELECT db_code, db_accession FROM pdb_db_ref WHERE db_code = )" + tx.quote(acc) + R"( OR db_accession = )" + tx.quote(acc));
+
+	if (r.empty())
+		return {};
+
+	auto rf = r.front();
+	std::string db_code = rf["db_code"].as<std::string>();
+	std::string db_accession = rf["db_code"].as<std::string>();
+
+	for (const auto &[pdb_id] : tx.stream<std::string>(R"(SELECT pdb_id FROM pdb_db_ref WHERE db_code = )" + tx.quote(db_code)))
+		ids.emplace_back(pdb_id);
 	
 	tx.commit();
 
-	return result;
+	return { db_code, db_accession, ids };
 }

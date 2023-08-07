@@ -9,12 +9,12 @@ create table pdb_file (
 	uniprot_end integer
 );
 
-create pdb_file_entities (
+create table pdb_file_entities (
 	id serial primary key,
 	pdb_id varchar not null references pdb_file(id) on delete cascade deferrable initially deferred,
 	entity_type varchar not null,
 	-- entity_poly_type varchar not null,
-	description varchar not null,
+	description varchar not null
 	-- identifier varchar,
 	-- identifier_category varchar
 );

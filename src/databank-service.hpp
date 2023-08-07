@@ -54,7 +54,8 @@ class databank_service
 			return {};
 	}
 
-	std::vector<std::string> get_pdb_ids_for_code_or_acc(const std::string &acc) const;
+	std::tuple<std::string,std::string,std::vector<std::string>>
+	get_pdb_ids_for_code_or_acc(const std::string &acc) const;
 
   private:
 	databank_service();
