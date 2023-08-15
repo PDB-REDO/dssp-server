@@ -338,8 +338,7 @@ void databank_service::check_ref_info(const std::string &pdb_id) const
 
 // --------------------------------------------------------------------
 
-std::tuple<std::string,std::string,std::vector<std::string>>
-databank_service::get_pdb_ids_for_code_or_acc(const std::string &acc) const
+std::vector<pdb_entry> databank_service::get_entries_for_code_or_acc(const std::string &acc) const
 {
 	pqxx::transaction tx(db_connection::instance());
 
@@ -359,5 +358,6 @@ databank_service::get_pdb_ids_for_code_or_acc(const std::string &acc) const
 	
 	tx.commit();
 
-	return { db_code, db_accession, ids };
+	// return { db_code, db_accession, ids };
+	return {};
 }

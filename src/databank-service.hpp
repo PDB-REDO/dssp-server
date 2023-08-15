@@ -26,12 +26,44 @@
 
 #pragma once
 
+#include <zeep/nvp.hpp>
+
 #include <condition_variable>
 #include <chrono>
 #include <filesystem>
 #include <mutex>
 #include <queue>
 #include <thread>
+
+struct uniprot_info
+{
+	std::string id, acc;
+	uint32_t start, end;
+
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("id", id)
+		   & zeep::make_nvp("acc", acc)
+		   & zeep::make_nvp("start", start)
+		   & zeep::make_nvp("end", end);
+	}
+};
+
+struct pdb_entry
+{
+	std::string id;
+	std::chrono::time_point<std::chrono::system_clock> file_date;
+	uniprot_info unp;
+
+	template <typename Archive>
+	void serialize(Archive &ar, unsigned long version)
+	{
+		ar & zeep::make_nvp("id", id)
+		   & zeep::make_nvp("created", file_date)
+		   & zeep::make_nvp("unp", unp);
+	}
+};
 
 class databank_service
 {
@@ -54,8 +86,7 @@ class databank_service
 			return {};
 	}
 
-	std::tuple<std::string,std::string,std::vector<std::string>>
-	get_pdb_ids_for_code_or_acc(const std::string &acc) const;
+	std::vector<pdb_entry> get_entries_for_code_or_acc(const std::string &acc) const;
 
   private:
 	databank_service();

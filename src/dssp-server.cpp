@@ -170,18 +170,16 @@ zeep::json::element dssp_rest_controller::beacon(const std::string &acc, std::st
 {
 	using namespace cif::literals;
 
-	const auto &[db_code, db_accession, pdb_ids] = databank_service::instance().get_pdb_ids_for_code_or_acc(acc);
+	// const auto &[db_code, db_accession, pdb_ids] = databank_service::instance().get_pdb_ids_for_code_or_acc(acc);
 
-	int version_major = 1, version_minor = 0;
+	auto data = databank_service::instance().get_entries_for_code_or_acc(acc);
+
+	int version_major = 1;
 	std::smatch m;
 	static const std::regex KVersionRX(R"((\d+)(?:\.(\d+))?(?:\.(\d+))?)");
 
 	if (std::regex_match(version_3dbeacons, m, KVersionRX))
-	{
 		version_major = std::stoi(m[1]);
-		if (m.length() >= 2)
-			version_minor = std::stoi(m[2]);
-	}
 
 	// using namespace std::chrono;
 
@@ -207,76 +205,79 @@ zeep::json::element dssp_rest_controller::beacon(const std::string &acc, std::st
 
 	// std::string db_code = struct_ref.front()["db_code"].as<std::string>();
 
-	zeep::json::element result{
-		{ "uniprot_entry", { { "ac", db_accession }, { "id", db_code } } }
-	};
+	// zeep::json::element result{
+	// 	{ "uniprot_entry", { { "ac", db_accession }, { "id", db_code } } }
+	// };
 
-	if (version_major >= 2)
-	{
-		for (auto pdb_id : pdb_ids)
-		{
-			zeep::json::element summary{
-				{ "model_identifier", pdb_id },
-				{ "model_category", "TEMPLATE-BASED" },
-				{ "model_url", "https://alphafill.eu/v1/aff/" + id },
-				{ "model_format", "MMCIF" },
-				{ "model_page_url", "https://alphafill.eu/model?id=" + id },
-				{ "provider", "AlphaFill" },
-				{ "created", ss.str() },
-				{ "sequence_identity", 1.0 },
-				{ "uniprot_start", uniprot_start },
-				{ "uniprot_end", uniprot_end },
-				{ "coverage", 1.0 },
-			};
+	// if (version_major >= 2)
+	// {
+	// 	for (auto pdb_id : pdb_ids)
+	// 	{
+	// 		zeep::json::element summary{
+	// 			{ "model_identifier", pdb_id },
+	// 			{ "model_category", "TEMPLATE-BASED" },
+	// 			{ "model_url", "https://pdb.eu/dssp/db/" + pdb_id },
+	// 			{ "model_format", "MMCIF" },
+	// 			{ "model_page_url", "https://pdb.eu/dssp/db/" + pdb_id },
+	// 			{ "provider", "AlphaFill" },
+	// 			{ "created", ss.str() },
+	// 			{ "sequence_identity", 1.0 },
+	// 			{ "uniprot_start", uniprot_start },
+	// 			{ "uniprot_end", uniprot_end },
+	// 			{ "coverage", 1.0 },
+	// 		};
 
-			auto &entities = summary["entities"];
-			auto &struct_asym = db["struct_asym"];
+	// 		auto &entities = summary["entities"];
+	// 		auto &struct_asym = db["struct_asym"];
 
-			for (const auto &[id, description, type] : db["entity"].rows<int, std::string, std::string>("id", "pdbx_description", "type"))
-			{
-				if (type == "polymer")
-				{
-					entities.push_back({ { "entity_type", "POLYMER" },
-						{ "entity_poly_type", "POLYPEPTIDE(L)" },
-						{ "description", description } });
-					entities.back()["chain_ids"].push_back("A");
-					continue;
-				}
+	// 		for (const auto &[id, description, type] : db["entity"].rows<int, std::string, std::string>("id", "pdbx_description", "type"))
+	// 		{
+	// 			if (type == "polymer")
+	// 			{
+	// 				entities.push_back({ { "entity_type", "POLYMER" },
+	// 					{ "entity_poly_type", "POLYPEPTIDE(L)" },
+	// 					{ "description", description } });
+	// 				entities.back()["chain_ids"].push_back("A");
+	// 				continue;
+	// 			}
 
-				if (type == "non-polymer")
-				{
-					entities.push_back({ { "entity_type", "NON-POLYMER" },
-						{ "description", description } });
+	// 			if (type == "non-polymer")
+	// 			{
+	// 				entities.push_back({ { "entity_type", "NON-POLYMER" },
+	// 					{ "description", description } });
 
-					auto &chain_ids = entities.back()["chain_ids"];
+	// 				auto &chain_ids = entities.back()["chain_ids"];
 
-					for (auto asym_id : struct_asym.find<std::string>("entity_id"_key == id, "id"))
-						chain_ids.push_back(asym_id);
+	// 				for (auto asym_id : struct_asym.find<std::string>("entity_id"_key == id, "id"))
+	// 					chain_ids.push_back(asym_id);
 
-					continue;
-				}
-			}
-		}
+	// 				continue;
+	// 			}
+	// 		}
+	// 	}
 
-		// 	result["structures"].push_back({{"summary", summary}});
-		// }
-		// else
-		// {
-		// 	result["structures"].push_back({{"model_identifier", id},
-		// 		{"model_category", "DEEP-LEARNING"},
-		// 		{"model_url", "https://alphafill.eu/v1/aff/" + id},
-		// 		{"model_page_url", "https://alphafill.eu/model?id=" + id},
-		// 		{"model_format", "MMCIF"},
-		// 		{"provider", "AlphaFill"},
-		// 		{"created", ss.str()},
-		// 		{"sequence_identity", 1.0},
-		// 		{"coverage", 1.0},
-		// 		{"uniprot_start", uniprot_start},
-		// 		{"uniprot_end", uniprot_end}});
-		// }
+	// 	// 	result["structures"].push_back({{"summary", summary}});
+	// 	// }
+	// 	// else
+	// 	// {
+	// 	// 	result["structures"].push_back({{"model_identifier", id},
+	// 	// 		{"model_category", "DEEP-LEARNING"},
+	// 	// 		{"model_url", "https://alphafill.eu/v1/aff/" + id},
+	// 	// 		{"model_page_url", "https://alphafill.eu/model?id=" + id},
+	// 	// 		{"model_format", "MMCIF"},
+	// 	// 		{"provider", "AlphaFill"},
+	// 	// 		{"created", ss.str()},
+	// 	// 		{"sequence_identity", 1.0},
+	// 	// 		{"coverage", 1.0},
+	// 	// 		{"uniprot_start", uniprot_start},
+	// 	// 		{"uniprot_end", uniprot_end}});
+	// 	// }
 
-		return result;
-	}
+	// }
+	
+	// return result;
+
+	return {};
 }
 
 // --------------------------------------------------------------------

@@ -112,7 +112,11 @@ if(NOT PDB_REDO_META)
 	find_package(dssp QUIET)
 	
 	if(NOT dssp_FOUND)
-		add_subdirectory(dssp EXCLUDE_FROM_ALL)
+		if(EXISTS ${PROJECT_SOURCE_DIR}/dssp/CMakeLists.txt)
+			add_subdirectory(dssp EXCLUDE_FROM_ALL)
+		else()
+			message(FATAL_ERROR "libdssp was not found, please install manually or check out the git submodules")
+		endif()
 	endif()
 endif()
 
