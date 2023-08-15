@@ -169,6 +169,7 @@ void databank_service::run()
 				dssp.annotate(db, true, true);
 				outCif << db;
 
+				outCif.flush();
 				outCif.close();
 
 				fs::remove(dssp_file, ec);

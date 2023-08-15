@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 # set the project name
-project(dssp-server VERSION 4.3.2 LANGUAGES CXX)
+project(dssp-server VERSION 1.0.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -112,16 +112,17 @@ if(NOT PDB_REDO_META)
 	find_package(dssp QUIET)
 	
 	if(NOT dssp_FOUND)
-		add_subdirectory(dssp EXCLUDE_FROM_ALL)
+		if(EXISTS ${PROJECT_SOURCE_DIR}/dssp/CMakeLists.txt)
+			add_subdirectory(dssp EXCLUDE_FROM_ALL)
+		else()
+			message(FATAL_ERROR "libdssp was not found, please install manually or check out the git submodules")
+		endif()
 	endif()
 endif()
 
 # For the databank
 find_package(date)
-pkg_check_modules(PQ libpq REQUIRED IMPORTED_TARGET)
-pkg_check_modules(PQXX libpqxx>=7.2 REQUIRED IMPORTED_TARGET)
-pkg_check_modules(SSL libssl IMPORTED_TARGET)
-pkg_check_modules(CRYPTO libcrypto IMPORTED_TARGET)
+find_package(libpqxx 7.8.1 REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
@@ -131,7 +132,7 @@ add_executable(dsspd
 	${PROJECT_SOURCE_DIR}/src/dssp-server.cpp)
 
 target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio
-	PkgConfig::PQXX PkgConfig::PQ PkgConfig::SSL PkgConfig::CRYPTO date::date)
+	libpqxx::pqxx date::date)
 
 # yarn rules for javascripts
 set(webpack_input
