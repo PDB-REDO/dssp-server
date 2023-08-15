@@ -72,6 +72,8 @@ class dssp_html_controller : public zeep::http::html_controller
 
 zeep::http::reply dssp_html_controller::db_mmcif(const zeep::http::scope& scope, std::string pdb_id)
 {
+	zeep::to_lower(pdb_id);
+
 	auto file = databank_service::instance().get(pdb_id, "mmcif");
 
 	if (not fs::exists(file))
@@ -118,6 +120,8 @@ zeep::http::reply dssp_html_controller::db_mmcif(const zeep::http::scope& scope,
 
 zeep::http::reply dssp_html_controller::db_legacy(const zeep::http::scope& scope, std::string pdb_id)
 {
+	zeep::to_lower(pdb_id);
+
 	auto file = databank_service::instance().get(pdb_id, "dssp");
 
 	if (not fs::exists(file))
@@ -164,6 +168,8 @@ zeep::http::reply dssp_html_controller::db_legacy(const zeep::http::scope& scope
 
 zeep::http::reply dssp_html_controller::get(const zeep::http::scope& scope, std::string pdb_id, std::optional<std::string> format)
 {
+	zeep::to_lower(pdb_id);
+
 	auto file = databank_service::instance().get(pdb_id, format.value_or("mmcif"));
 
 	if (not fs::exists(file))
