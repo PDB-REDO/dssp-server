@@ -33,7 +33,7 @@
 #include <cif++.hpp>
 
 #include <gxrio.hpp>
-#include <mcfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/html-controller.hpp>

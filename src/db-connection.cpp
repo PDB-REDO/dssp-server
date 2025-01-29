@@ -26,7 +26,7 @@
 
 #include "db-connection.hpp"
 
-#include <mcfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 #include <date/date.h>
 
