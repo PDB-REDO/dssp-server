@@ -1,0 +1,30 @@
+<!DOCTYPE html SYSTEM "about:legacy-compat" [ <!ENTITY nbsp "&#160;">
+]>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:z2="http://www.hekkelman.com/libzeep/m2" lang="nl">
+
+<head z2:replace="~{head::head(~{::title},~{::head/script})}">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+	<title>PDB-REDO</title>
+</head>
+
+<body class="site">
+	<nav z2:replace="~{menu :: navbar('api')}"></nav>
+
+	<div class="container site-content">
+
+		<article>
+			<h2>Using the DSSP API</h2>
+
+			<p>Using the DSSP API is as simple as doing a REST call to https://pdb-redo/dssp/do using POST containing a parameter called <em>data</em> containing the mmCIF or PDB formatted structure and optionally a parameter called format that can contain either <em>mmcif</em> or <em>dssp</em>. The result will be an HTTP reply containing only the output from mkdss.
+			</p>
+		</article>
+
+	</div>
+
+	<footer z2:replace="~{footer::content}"></footer>
+</body>
+
+</html>

@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <zeep/nvp.hpp>
+
 #include <condition_variable>
 #include <chrono>
 #include <filesystem>
@@ -55,6 +57,8 @@ class databank_service
 		else
 			return {};
 	}
+
+	std::vector<pdb_entry> get_entries_for_code_or_acc(const std::string &acc) const;
 
   private:
 	databank_service();

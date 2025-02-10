@@ -24,9 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dssp.hpp"
 #include "databank-service.hpp"
 #include "db-connection.hpp"
+#include "dssp.hpp"
 
 #include "revision.hpp"
 
@@ -56,7 +56,7 @@ class dssp_html_controller : public zeep::http::html_controller
 		map_get("about", "about");
 		map_get("download", "download");
 		map_get("license", "license");
-		
+
 		map_get("get", &dssp_html_controller::get, "pdb-id", "format");
 
 		map_get("db/{pdb-id}", &dssp_html_controller::db_mmcif, "pdb-id");
@@ -183,7 +183,7 @@ zeep::http::reply dssp_html_controller::get(const zeep::http::scope& scope, std:
 		return reply;
 	}
 
-	zeep::http::reply rep(zeep::http::ok, {1, 1});
+	zeep::http::reply rep(zeep::http::ok, { 1, 1 });
 
 	if (file.extension() != ".gz")
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
@@ -197,8 +197,8 @@ zeep::http::reply dssp_html_controller::get(const zeep::http::scope& scope, std:
 		cif::gzio::ifstream in(file);
 
 		if (not in.is_open())
-			return zeep::http::reply(zeep::http::not_found, {1, 1});
-		
+			return zeep::http::reply(zeep::http::not_found, { 1, 1 });
+
 		std::stringstream os;
 		os << in.rdbuf();
 
@@ -223,9 +223,11 @@ class dssp_rest_controller : public zeep::http::rest_controller
 		: zeep::http::rest_controller("")
 	{
 		map_post_request("do", &dssp_rest_controller::work, "data", "format");
+		map_get_request("3d-beacon/{id}", &dssp_rest_controller::beacon, "id", "version");
 	}
 
 	zeep::http::reply work(const zeep::http::file_param &coordinates, std::optional<std::string> format);
+	zeep::json::element beacon(const std::string &acc, std::string version_3dbeacons);
 };
 
 zeep::http::reply dssp_rest_controller::work(const zeep::http::file_param &coordinates, std::optional<std::string> format)
@@ -240,7 +242,7 @@ zeep::http::reply dssp_rest_controller::work(const zeep::http::file_param &coord
 
 	// --------------------------------------------------------------------
 
-	short pp_stretch = 3; //minPPStretch.value_or(3);
+	short pp_stretch = 3; // minPPStretch.value_or(3);
 
 	std::string fmt = format.value_or("mmcif");
 
@@ -257,7 +259,7 @@ zeep::http::reply dssp_rest_controller::work(const zeep::http::file_param &coord
 	}
 
 	// --------------------------------------------------------------------
-	
+
 	std::string name = f.front().name();
 	if (fmt == "dssp")
 		name += ".dssp";
@@ -269,6 +271,120 @@ zeep::http::reply dssp_rest_controller::work(const zeep::http::file_param &coord
 	rep.set_header("content-disposition", "attachement; filename = \"" + name + '"');
 
 	return rep;
+}
+
+zeep::json::element dssp_rest_controller::beacon(const std::string &acc, std::string version_3dbeacons)
+{
+	using namespace cif::literals;
+
+	// const auto &[db_code, db_accession, pdb_ids] = databank_service::instance().get_pdb_ids_for_code_or_acc(acc);
+
+	auto data = databank_service::instance().get_entries_for_code_or_acc(acc);
+
+	int version_major = 1;
+	std::smatch m;
+	static const std::regex KVersionRX(R"((\d+)(?:\.(\d+))?(?:\.(\d+))?)");
+
+	if (std::regex_match(version_3dbeacons, m, KVersionRX))
+		version_major = std::stoi(m[1]);
+
+	// using namespace std::chrono;
+
+	// auto ft = fs::last_write_time(file);
+	// auto sctp = time_point_cast<system_clock::duration>(ft - decltype(ft)::clock::now() + system_clock::now());
+	// std::time_t cft = system_clock::to_time_t(sctp);
+	// std::tm *tm = std::gmtime(&cft);
+
+	// std::stringstream ss;
+	// ss << std::put_time(tm, "%F");
+
+	// // get the chain length...
+
+	// cif::file cf(file);
+	// if (cf.empty())
+	// 	throw zeep::http::not_found;
+	// auto &db = cf.front();
+	// auto &struct_ref = db["struct_ref"];
+	// auto &struct_ref_seq = db["struct_ref_seq"];
+
+	// int uniprot_start, uniprot_end;
+	// cif::tie(uniprot_start, uniprot_end) = struct_ref_seq.front().get("db_align_beg", "db_align_end");
+
+	// std::string db_code = struct_ref.front()["db_code"].as<std::string>();
+
+	// zeep::json::element result{
+	// 	{ "uniprot_entry", { { "ac", db_accession }, { "id", db_code } } }
+	// };
+
+	// if (version_major >= 2)
+	// {
+	// 	for (auto pdb_id : pdb_ids)
+	// 	{
+	// 		zeep::json::element summary{
+	// 			{ "model_identifier", pdb_id },
+	// 			{ "model_category", "TEMPLATE-BASED" },
+	// 			{ "model_url", "https://pdb.eu/dssp/db/" + pdb_id },
+	// 			{ "model_format", "MMCIF" },
+	// 			{ "model_page_url", "https://pdb.eu/dssp/db/" + pdb_id },
+	// 			{ "provider", "AlphaFill" },
+	// 			{ "created", ss.str() },
+	// 			{ "sequence_identity", 1.0 },
+	// 			{ "uniprot_start", uniprot_start },
+	// 			{ "uniprot_end", uniprot_end },
+	// 			{ "coverage", 1.0 },
+	// 		};
+
+	// 		auto &entities = summary["entities"];
+	// 		auto &struct_asym = db["struct_asym"];
+
+	// 		for (const auto &[id, description, type] : db["entity"].rows<int, std::string, std::string>("id", "pdbx_description", "type"))
+	// 		{
+	// 			if (type == "polymer")
+	// 			{
+	// 				entities.push_back({ { "entity_type", "POLYMER" },
+	// 					{ "entity_poly_type", "POLYPEPTIDE(L)" },
+	// 					{ "description", description } });
+	// 				entities.back()["chain_ids"].push_back("A");
+	// 				continue;
+	// 			}
+
+	// 			if (type == "non-polymer")
+	// 			{
+	// 				entities.push_back({ { "entity_type", "NON-POLYMER" },
+	// 					{ "description", description } });
+
+	// 				auto &chain_ids = entities.back()["chain_ids"];
+
+	// 				for (auto asym_id : struct_asym.find<std::string>("entity_id"_key == id, "id"))
+	// 					chain_ids.push_back(asym_id);
+
+	// 				continue;
+	// 			}
+	// 		}
+	// 	}
+
+	// 	// 	result["structures"].push_back({{"summary", summary}});
+	// 	// }
+	// 	// else
+	// 	// {
+	// 	// 	result["structures"].push_back({{"model_identifier", id},
+	// 	// 		{"model_category", "DEEP-LEARNING"},
+	// 	// 		{"model_url", "https://alphafill.eu/v1/aff/" + id},
+	// 	// 		{"model_page_url", "https://alphafill.eu/model?id=" + id},
+	// 	// 		{"model_format", "MMCIF"},
+	// 	// 		{"provider", "AlphaFill"},
+	// 	// 		{"created", ss.str()},
+	// 	// 		{"sequence_identity", 1.0},
+	// 	// 		{"coverage", 1.0},
+	// 	// 		{"uniprot_start", uniprot_start},
+	// 	// 		{"uniprot_end", uniprot_end}});
+	// 	// }
+
+	// }
+	
+	// return result;
+
+	return {};
 }
 
 // --------------------------------------------------------------------
@@ -356,7 +472,7 @@ int main(int argc, char *argv[])
 	uint16_t port = config.get<uint16_t>("port");
 
 	zeep::http::daemon server([&, context = config.get("context")]()
-	{
+		{
 		db_connection::init();
 		databank_service::instance();
 
@@ -372,8 +488,8 @@ int main(int argc, char *argv[])
 
 		s->set_context_name(context);
 
-		return s;
-	}, kProjectName);
+		return s; },
+		kProjectName);
 
 	std::string command = config.operands().front();
 
