@@ -103,7 +103,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 if(NOT PDB_REDO_META)
-	find_package(mcfp REQUIRED)
+	find_package(mcfp 1.3.5 REQUIRED)
 	find_package(cifpp 5.1.0 REQUIRED)
 
 	find_package(zeep REQUIRED)
