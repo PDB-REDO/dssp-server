@@ -1,0 +1,15 @@
+[Unit]
+Description=The DSSP web service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Restart=on-failure
+Type=forking
+PIDFile=@DSSPD_PID@
+ExecStart=@DSSPD_EXE@ start
+ExecReload=@DSSPD_EXE@ reload
+ExecStop=@DSSPD_EXE@ stop
+
+[Install]
+WantedBy=multi-user.target

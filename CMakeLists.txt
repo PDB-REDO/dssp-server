@@ -83,6 +83,10 @@ if(MSVC)
 	add_definitions(-D_WIN32_WINNT=${ver})
 endif()
 
+set(CONFIG_PATH "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+set(DSSPD_EXE "${CMAKE_INSTALL_FULL_SBINDIR}/dsspd")
+set(DSSPD_PID "/var/run/dsspd")
+
 # Create a revision file, containing the current git version info
 include(VersionString)
 write_version_header("${PROJECT_SOURCE_DIR}/src")
@@ -104,9 +108,9 @@ if(NOT PDB_REDO_META)
 
 	find_package(zeep REQUIRED)
 	find_package(gxrio REQUIRED)
-	
+
 	find_package(dssp QUIET)
-	
+
 	if(NOT dssp_FOUND)
 		if(EXISTS ${PROJECT_SOURCE_DIR}/dssp/CMakeLists.txt)
 			add_subdirectory(dssp EXCLUDE_FROM_ALL)
@@ -169,3 +173,8 @@ install(TARGETS dsspd
 	EXPORT dsspTargets
 	RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
 
+if(LINUX)
+	configure_file(dsspd.service.in ${CMAKE_CURRENT_BINARY_DIR}/dsspd.service @ONLY)
+
+	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/dsspd.service" DESTINATION "/etc/systemd/system")
+endif()
