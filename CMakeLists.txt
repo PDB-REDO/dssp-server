@@ -102,7 +102,7 @@ set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
 if(NOT PDB_REDO_META)
-	find_package(libmcfp REQUIRED)
+	find_package(mcfp REQUIRED)
 	find_package(cifpp 5.1.0 REQUIRED)
 
 	find_package(zeep REQUIRED)
@@ -131,7 +131,7 @@ add_executable(dsspd
 	${PROJECT_SOURCE_DIR}/src/dssp-server.cpp)
 
 target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio
-	libpqxx::pqxx date::date)
+	libpqxx::pqxx date::date mcfp::mcfp)
 
 # yarn rules for javascripts
 set(webpack_input

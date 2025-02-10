@@ -30,7 +30,7 @@
 
 #include <cif++.hpp>
 
-#include <mcfp.hpp>
+#include <mcfp/mcfp.hpp>
 
 #include <functional>
 #include <iostream>
