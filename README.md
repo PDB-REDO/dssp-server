@@ -47,3 +47,4 @@ dsspd start
 To run the server in the foreground, run `dsspd start --no-daemon`. Log files
 are written to `/var/log/dsspd`.
 
+If you're on Linux, a systemd service file is installed as well.
