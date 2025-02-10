@@ -6,7 +6,7 @@ const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const path = require('path');
 
 const SCRIPTS = __dirname + "/webapp/";
-const DEST = __dirname + "/docroot/scripts";
+const DEST = __dirname + "/docroot";
 
 module.exports = (env) => {
 
@@ -14,12 +14,13 @@ module.exports = (env) => {
 
 	const webpackConf = {
 		entry: {
-			index: SCRIPTS + "index.js"
+			index: path.resolve(SCRIPTS, "index.js")
 		},
 
 		output: {
 			path: DEST,
-			crossOriginLoading: 'anonymous'
+			crossOriginLoading: 'anonymous',
+			filename: "scripts/[name].js"
 		},
 
 		module: {
@@ -40,7 +41,6 @@ module.exports = (env) => {
 					use: [
 						MiniCssExtractPlugin.loader,
 						"css-loader",
-						"postcss-loader",
 						"sass-loader"
 					]
 				},
@@ -50,7 +50,7 @@ module.exports = (env) => {
 					include: path.resolve(__dirname, './node_modules/bootstrap-icons/font/fonts'),
 					type: 'asset/resource',
 					generator: {
-						filename: '../fonts/[name][ext]'
+						filename: 'fonts/[name][ext]'
 					}
 				}
 			]
@@ -62,7 +62,7 @@ module.exports = (env) => {
 
 		plugins: [
 			new MiniCssExtractPlugin({
-				filename: "../css/[name].css"
+				filename: "css/[name].css"
 			})
 		],
 
@@ -76,7 +76,12 @@ module.exports = (env) => {
 
 		webpackConf.plugins.push(
 			new CleanWebpackPlugin({
-				verbose: true
+				verbose: true,
+				cleanOnceBeforeBuildPatterns: [
+					'css/*',
+					'fonts/*',
+					'scripts/*',
+				]
 			}));
 
 		webpackConf.optimization.minimizer.push(
