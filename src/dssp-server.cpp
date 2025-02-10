@@ -56,6 +56,7 @@ class dssp_html_controller : public zeep::http::html_controller
 		map_get("about", "about");
 		map_get("download", "download");
 		map_get("license", "license");
+		map_get("api-doc", "api-doc");
 
 		map_get("get", &dssp_html_controller::get, "pdb-id", "format");
 
