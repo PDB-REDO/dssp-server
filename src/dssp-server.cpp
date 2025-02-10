@@ -490,7 +490,7 @@ int main(int argc, char *argv[])
 		s->set_context_name(context);
 
 		return s; },
-		kProjectName);
+		"dsspd");
 
 	std::string command = config.operands().front();
 
