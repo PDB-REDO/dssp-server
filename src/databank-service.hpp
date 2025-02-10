@@ -34,6 +34,7 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <vector>
 
 #include <cif++.hpp>
 
@@ -58,7 +59,7 @@ class databank_service
 			return {};
 	}
 
-	std::vector<pdb_entry> get_entries_for_code_or_acc(const std::string &acc) const;
+	// std::vector<pdb_entry> get_entries_for_code_or_acc(const std::string &acc) const;
 
   private:
 	databank_service();
