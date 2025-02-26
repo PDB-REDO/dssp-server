@@ -101,23 +101,13 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-if(NOT PDB_REDO_META)
-	find_package(mcfp REQUIRED)
-	find_package(cifpp 5.1.0 REQUIRED)
+find_package(mcfp REQUIRED)
+find_package(cifpp 5.1.0 REQUIRED)
 
-	find_package(zeep REQUIRED)
-	find_package(gxrio REQUIRED)
-	
-	find_package(dssp QUIET)
-	
-	if(NOT dssp_FOUND)
-		if(EXISTS ${PROJECT_SOURCE_DIR}/dssp/CMakeLists.txt)
-			add_subdirectory(dssp EXCLUDE_FROM_ALL)
-		else()
-			message(FATAL_ERROR "libdssp was not found, please install manually or check out the git submodules")
-		endif()
-	endif()
-endif()
+find_package(zeep REQUIRED)
+find_package(gxrio REQUIRED)
+
+add_subdirectory(dssp EXCLUDE_FROM_ALL)
 
 # For the databank
 find_package(date)
@@ -161,14 +151,17 @@ if(NOT DEFINED DSSP_SHARE_DIR)
 	set(DSSP_SHARE_DIR ${CIFPP_SHARE_DIR})
 endif()
 
+file(COPY_FILE
+	${CMAKE_CURRENT_SOURCE_DIR}/dssp/libdssp/mmcif_pdbx/dssp-extension.dic
+	${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic)
+
 mrc_target_resources(dsspd
 	${CIFPP_SHARE_DIR}/mmcif_pdbx.dic
 	${CIFPP_SHARE_DIR}/mmcif_ddl.dic
-	${DSSP_SHARE_DIR}/dssp-extension.dic
+	${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic
 	${PROJECT_SOURCE_DIR}/docroot/)
 
 # Install rules
 install(TARGETS dsspd
 	EXPORT dsspTargets
 	RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
-

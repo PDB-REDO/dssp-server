@@ -56,6 +56,7 @@ class dssp_html_controller : public zeep::http::html_controller
 		map_get("about", "about");
 		map_get("download", "download");
 		map_get("license", "license");
+		map_get("dssp-extension.dic", &dssp_html_controller::get_dict);
 		
 		map_get("get", &dssp_html_controller::get, "pdb-id", "format");
 
@@ -68,6 +69,17 @@ class dssp_html_controller : public zeep::http::html_controller
 
 	zeep::http::reply db_mmcif(const zeep::http::scope& scope, std::string pdb_id);
 	zeep::http::reply db_legacy(const zeep::http::scope& scope, std::string pdb_id);
+
+	zeep::http::reply get_dict(const zeep::http::scope& scope)
+	{
+		auto dict = cif::load_resource("dssp-extension-built-in.dic");
+
+		zeep::http::reply r{ zeep::http::ok };
+		r.set_content(dict.release(), "text/plain");
+		r.set_header("content-disposition", "attachement; filename = \"dssp-extension.dic\"");
+
+		return r;
+	}
 };
 
 zeep::http::reply dssp_html_controller::db_mmcif(const zeep::http::scope& scope, std::string pdb_id)
