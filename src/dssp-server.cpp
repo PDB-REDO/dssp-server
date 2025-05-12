@@ -37,7 +37,6 @@
 
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/html-controller.hpp>
-#include <zeep/http/rest-controller.hpp>
 #include <zeep/streambuf.hpp>
 
 namespace fs = std::filesystem;
@@ -50,27 +49,32 @@ class dssp_html_controller : public zeep::http::html_controller
 	dssp_html_controller()
 		: zeep::http::html_controller()
 	{
-		mount("{css,scripts,fonts,images,favicon}/", &dssp_html_controller::handle_file);
-		mount("{favicon.ico,browserconfig.xml,manifest.json}", &dssp_html_controller::handle_file);
-		map_get("", "index");
-		map_get("about", "about");
-		map_get("download", "download");
-		map_get("license", "license");
-		map_get("api-doc", "api-doc");
+		map_get_file("{css,scripts,fonts,images,favicon}/");
+		map_get_file("{favicon.ico,browserconfig.xml,manifest.json}");
+		map_get_simple("", "index");
+		map_get_simple("about", "about");
+		map_get_simple("download", "download");
+		map_get_simple("license", "license");
+		map_get_simple("api-doc", "api-doc");
 
 		map_get("dssp-extension.dic", &dssp_html_controller::get_dict);
+		map_get("dssp-extensions.dic", &dssp_html_controller::get_dict);
 		
 		map_get("get", &dssp_html_controller::get, "pdb-id", "format");
 
 		map_get("db/{pdb-id}", &dssp_html_controller::db_mmcif, "pdb-id");
 		map_get("db/{pdb-id}/mmcif", &dssp_html_controller::db_mmcif, "pdb-id");
 		map_get("db/{pdb-id}/legacy", &dssp_html_controller::db_legacy, "pdb-id");
+
+		map_post_request("do", &dssp_html_controller::work, "data", "format");
 	}
 
 	zeep::http::reply get(const zeep::http::scope& scope, std::string pdb_id, std::optional<std::string> format);
 
 	zeep::http::reply db_mmcif(const zeep::http::scope& scope, std::string pdb_id);
 	zeep::http::reply db_legacy(const zeep::http::scope& scope, std::string pdb_id);
+
+	zeep::http::reply work(const zeep::http::file_param &coordinates, std::optional<std::string> format);
 
 	zeep::http::reply get_dict(const zeep::http::scope& scope)
 	{
@@ -105,7 +109,7 @@ zeep::http::reply dssp_html_controller::db_mmcif(const zeep::http::scope& scope,
 
 	if (file.extension() != ".gz")
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
-	else if (get_header("accept-encoding").find("gzip") != std::string::npos)
+	else if (scope.get_header("accept-encoding").find("gzip") != std::string::npos)
 	{
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
 		rep.set_header("content-encoding", "gzip");
@@ -153,7 +157,7 @@ zeep::http::reply dssp_html_controller::db_legacy(const zeep::http::scope& scope
 
 	if (file.extension() != ".gz")
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
-	else if (get_header("accept-encoding").find("gzip") != std::string::npos)
+	else if (scope.get_header("accept-encoding").find("gzip") != std::string::npos)
 	{
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
 		rep.set_header("content-encoding", "gzip");
@@ -201,7 +205,7 @@ zeep::http::reply dssp_html_controller::get(const zeep::http::scope& scope, std:
 
 	if (file.extension() != ".gz")
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
-	else if (get_header("accept-encoding").find("gzip") != std::string::npos)
+	else if (scope.get_header("accept-encoding").find("gzip") != std::string::npos)
 	{
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
 		rep.set_header("content-encoding", "gzip");
@@ -230,21 +234,7 @@ zeep::http::reply dssp_html_controller::get(const zeep::http::scope& scope, std:
 
 // --------------------------------------------------------------------
 
-class dssp_rest_controller : public zeep::http::rest_controller
-{
-  public:
-	dssp_rest_controller()
-		: zeep::http::rest_controller("")
-	{
-		map_post_request("do", &dssp_rest_controller::work, "data", "format");
-		// map_get_request("3d-beacon/{id}", &dssp_rest_controller::beacon, "id", "version");
-	}
-
-	zeep::http::reply work(const zeep::http::file_param &coordinates, std::optional<std::string> format);
-	// zeep::json::element beacon(const std::string &acc, std::string version_3dbeacons);
-};
-
-zeep::http::reply dssp_rest_controller::work(const zeep::http::file_param &coordinates, std::optional<std::string> format)
+zeep::http::reply dssp_html_controller::work(const zeep::http::file_param &coordinates, std::optional<std::string> format)
 {
 	zeep::char_streambuf sb(coordinates.data, coordinates.length);
 
@@ -497,7 +487,6 @@ int main(int argc, char *argv[])
 #else
 		s->set_template_processor(new zeep::http::rsrc_based_html_template_processor());
 #endif
-		s->add_controller(new dssp_rest_controller());
 		s->add_controller(new dssp_html_controller());
 
 		s->set_context_name(context);

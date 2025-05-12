@@ -25,62 +25,15 @@
 cmake_minimum_required(VERSION 3.15)
 
 # set the project name
-project(dssp-server VERSION 1.0.0 LANGUAGES CXX)
+project(dssp-server VERSION 1.1.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+include(CPM)
 include(GNUInstallDirs)
-include(CheckFunctionExists)
-include(CheckIncludeFiles)
-include(CheckLibraryExists)
-include(CMakePackageConfigHelpers)
-include(GenerateExportHeader)
-include(FindPkgConfig)
-
-set(CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
-elseif(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-endif()
-
-# Optionally build a version to be installed inside CCP4
-option(BUILD_FOR_CCP4 "Build a version to be installed in CCP4" OFF)
-option(BUILD_WEBSERVER "Add code to run dssp as a web service" OFF)
-
-if(BUILD_FOR_CCP4)
-	if("$ENV{CCP4}" STREQUAL "" OR NOT EXISTS $ENV{CCP4})
-		message(FATAL_ERROR "A CCP4 built was requested but CCP4 was not sourced")
-	else()
-		list(APPEND CMAKE_MODULE_PATH "$ENV{CCP4}")
-		list(APPEND CMAKE_PREFIX_PATH "$ENV{CCP4}")
-		set(CMAKE_INSTALL_PREFIX "$ENV{CCP4}")
-
-		if(WIN32)
-			set(BUILD_SHARED_LIBS ON)
-		endif()
-	endif()
-endif()
-
-if(MSVC)
-	# make msvc standards compliant...
-	add_compile_options(/permissive-)
-
-	macro(get_WIN32_WINNT version)
-		if(WIN32 AND CMAKE_SYSTEM_VERSION)
-			set(ver ${CMAKE_SYSTEM_VERSION})
-			string(REPLACE "." "" ver ${ver})
-			string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
-
-			set(${version} "0x${ver}")
-		endif()
-	endmacro()
-
-	get_WIN32_WINNT(ver)
-	add_definitions(-D_WIN32_WINNT=${ver})
 endif()
 
 set(CONFIG_PATH "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
@@ -92,7 +45,7 @@ include(VersionString)
 write_version_header("${PROJECT_SOURCE_DIR}/src")
 
 # Optionally use mrc to create resources
-find_package(Mrc QUIET)
+find_package(mrc QUIET)
 
 if(NOT MRC_FOUND)
 	message(FATAL_ERROR "Cannot use resources since mrc was not found")
@@ -102,17 +55,26 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-find_package(mcfp REQUIRED)
-find_package(cifpp 5.1.0 REQUIRED)
-
-find_package(zeep REQUIRED)
-find_package(gxrio REQUIRED)
-
-add_subdirectory(dssp EXCLUDE_FROM_ALL)
-
-# For the databank
-find_package(date)
-find_package(libpqxx 7.8.1 REQUIRED)
+CPMAddPackage(NAME nlohmann_json VERSION 3.9.1 GITHUB_REPOSITORY nlohmann/json OPTIONS "JSON_BuildTests OFF" EXCLUDE_FROM_ALL YES)
+CPMAddPackage("gh:HowardHinnant/date@3.0.3")
+CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.2")
+CPMAddPackage(NAME zeep
+	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
+	GIT_TAG ce4f2a1
+	EXCLUDE_FROM_ALL YES)
+CPMAddPackage("https://forge.hekkelman.net/maarten/gxrio.git@1.0.2")
+CPMAddPackage(NAME cifpp
+	GIT_REPOSITORY https://github.com/pdb-redo/libcifpp.git
+	GIT_TAG v8.0.1
+	EXCLUDE_FROM_ALL YES)
+CPMAddPackage(NAME dssp
+	GIT_REPOSITORY https://github.com/pdb-redo/dssp.git
+	GIT_TAG v4.5.1
+	EXCLUDE_FROM_ALL YES)
+CPMAddPackage(NAME libpqxx
+	GIT_REPOSITORY https://github.com/jtv/libpqxx.git
+	GIT_TAG 7.10.1
+	EXCLUDE_FROM_ALL YES)
 
 find_program(YARN yarn REQUIRED)
 
@@ -148,17 +110,12 @@ add_custom_target(generate_webpack DEPENDS ${webpack_output})
 
 add_dependencies(dsspd generate_webpack)
 
-if(NOT DEFINED DSSP_SHARE_DIR)
-	set(DSSP_SHARE_DIR ${CIFPP_SHARE_DIR})
-endif()
-
 file(COPY_FILE
-	${CMAKE_CURRENT_SOURCE_DIR}/dssp/libdssp/mmcif_pdbx/dssp-extension.dic
+	${dssp_SOURCE_DIR}/libdssp/mmcif_pdbx/dssp-extension.dic
 	${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic)
 
 mrc_target_resources(dsspd
-	${CIFPP_SHARE_DIR}/mmcif_pdbx.dic
-	${CIFPP_SHARE_DIR}/mmcif_ddl.dic
+	${cifpp_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
 	${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic
 	${PROJECT_SOURCE_DIR}/docroot/)
 
@@ -169,6 +126,5 @@ install(TARGETS dsspd
 
 if(LINUX)
 	configure_file(dsspd.service.in ${CMAKE_CURRENT_BINARY_DIR}/dsspd.service @ONLY)
-
 	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/dsspd.service" DESTINATION "/etc/systemd/system")
 endif()

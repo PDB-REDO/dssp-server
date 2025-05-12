@@ -26,8 +26,6 @@
 
 #pragma once
 
-#include <zeep/nvp.hpp>
-
 #include <condition_variable>
 #include <chrono>
 #include <filesystem>
