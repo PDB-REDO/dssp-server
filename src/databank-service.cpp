@@ -348,9 +348,10 @@ void databank_service::update_db_ref(const cif::datablock &db)
 
 	for (const auto &[db_code, db_name, acc] : db["struct_ref"].rows<std::string,std::string,std::string>("db_code", "db_name", "pdbx_db_accession"))
 	{
-		tx.exec0(
+		tx.exec(
 			R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
-			VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())");
+			VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())")
+			.no_rows();
 	}
 
 	tx.commit();

@@ -55,12 +55,14 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-CPMAddPackage(NAME nlohmann_json VERSION 3.9.1 GITHUB_REPOSITORY nlohmann/json OPTIONS "JSON_BuildTests OFF" EXCLUDE_FROM_ALL YES)
+find_package(nlohmann_json REQUIRED)
+find_package(mrc REQUIRED)
+
 CPMAddPackage("gh:HowardHinnant/date@3.0.3")
 CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.2")
 CPMAddPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG ce4f2a1
+	GIT_TAG 875eac2
 	EXCLUDE_FROM_ALL YES)
 CPMAddPackage("https://forge.hekkelman.net/maarten/gxrio.git@1.0.2")
 CPMAddPackage(NAME cifpp
