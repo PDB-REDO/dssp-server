@@ -55,14 +55,14 @@ set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-find_package(nlohmann_json REQUIRED)
+# find_package(nlohmann_json REQUIRED)
 find_package(mrc REQUIRED)
 
 # CPMAddPackage("gh:HowardHinnant/date@3.0.3")
 CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.2")
 CPMAddPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG 875eac2
+	GIT_TAG 9959202
 	EXCLUDE_FROM_ALL YES)
 CPMAddPackage("https://forge.hekkelman.net/maarten/gxrio.git@1.0.2")
 CPMAddPackage(NAME cifpp
@@ -71,7 +71,7 @@ CPMAddPackage(NAME cifpp
 	EXCLUDE_FROM_ALL YES)
 CPMAddPackage(NAME dssp
 	GIT_REPOSITORY https://github.com/pdb-redo/dssp.git
-	GIT_TAG v4.5.4
+	GIT_TAG 33805a2
 	EXCLUDE_FROM_ALL YES)
 CPMAddPackage(NAME libpqxx
 	GIT_REPOSITORY https://github.com/jtv/libpqxx.git
