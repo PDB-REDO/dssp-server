@@ -48,7 +48,7 @@ write_version_header("${PROJECT_SOURCE_DIR}/src")
 find_package(mrc QUIET)
 
 if(NOT MRC_FOUND)
-	message(FATAL_ERROR "Cannot use resources since mrc was not found")
+	message(FATAL_ERROR "dssp: Cannot use resources since mrc was not found")
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD)
@@ -58,7 +58,7 @@ find_package(Threads)
 find_package(nlohmann_json REQUIRED)
 find_package(mrc REQUIRED)
 
-CPMAddPackage("gh:HowardHinnant/date@3.0.3")
+# CPMAddPackage("gh:HowardHinnant/date@3.0.3")
 CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.2")
 CPMAddPackage(NAME zeep
 	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
@@ -71,7 +71,7 @@ CPMAddPackage(NAME cifpp
 	EXCLUDE_FROM_ALL YES)
 CPMAddPackage(NAME dssp
 	GIT_REPOSITORY https://github.com/pdb-redo/dssp.git
-	GIT_TAG v4.5.1
+	GIT_TAG v4.5.4
 	EXCLUDE_FROM_ALL YES)
 CPMAddPackage(NAME libpqxx
 	GIT_REPOSITORY https://github.com/jtv/libpqxx.git
@@ -92,8 +92,7 @@ target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio
 set(webpack_input
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-style.scss
 	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
-)
+	${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js)
 
 set(webpack_output ${CMAKE_CURRENT_SOURCE_DIR}/docroot/scripts/index.js)
 
