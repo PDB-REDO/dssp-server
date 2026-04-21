@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 # set the project name
-project(dssp-server VERSION 1.0.0 LANGUAGES CXX)
+project(dssp-server VERSION 1.1.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -104,12 +104,12 @@ find_package(Threads)
 
 if(NOT PDB_REDO_META)
 	find_package(mcfp 1.3.5 REQUIRED)
-	find_package(cifpp 5.1.0 REQUIRED)
+	find_package(cifpp 10.0.3 REQUIRED)
 
 	find_package(zeep REQUIRED)
 	find_package(gxrio REQUIRED)
 
-	find_package(dssp QUIET)
+	find_package(dssp 4.6.1 QUIET)
 
 	if(NOT dssp_FOUND)
 		if(EXISTS ${PROJECT_SOURCE_DIR}/dssp/CMakeLists.txt)

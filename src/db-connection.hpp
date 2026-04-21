@@ -26,15 +26,9 @@
 
 #pragma once
 
-#include <mutex>
-
 #include <pqxx/pqxx>
 
 #include <zeep/http/error-handler.hpp>
-
-// --------------------------------------------------------------------
-
-std::chrono::time_point<std::chrono::system_clock> parse_timestamp(std::string timestamp);
 
 // --------------------------------------------------------------------
 

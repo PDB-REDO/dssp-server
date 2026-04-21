@@ -28,6 +28,7 @@
 #include "db-connection.hpp"
 #include "dssp.hpp"
 
+#include <chrono>
 #include <cif++.hpp>
 
 #include <mcfp/mcfp.hpp>
@@ -35,6 +36,9 @@
 #include <functional>
 #include <iostream>
 #include <queue>
+#include <stdexcept>
+#include <tuple>
+#include <zeep/el/serializer.hpp>
 
 namespace fs = std::filesystem;
 
@@ -261,6 +265,19 @@ void databank_service::scan()
 	}
 }
 
+// std::tuple<std::string, std::string> fixup_pdb_id(std::string pdb_id)
+// {
+// 	if ((pdb_id.starts_with("pdb_id") and pdb_id.length() != 12) or (pdb_id.length() != 4 and pdb_id.length() != 8))
+// 		throw std::runtime_error(std::format("Invalid PDB id '{}'", pdb_id));
+
+// 	if (pdb_id.starts_with("pdb_"))
+// 		pdb_id.erase(0, 4);
+
+// 	return pdb_id.length() == 8 ?
+// 		std::make_tuple(pdb_id.substr(5, 2), pdb_id) :
+// 		std::make_tuple(pdb_id.substr(5, 2), "0000" + pdb_id);
+// }
+
 fs::path databank_service::get_pdb_file_for_pdb_id(const std::string &pdb_id) const
 {
 	return m_pdb_dir / pdb_id.substr(1, 2) / (pdb_id + ".cif.gz");
@@ -301,7 +318,7 @@ void databank_service::update_db_ref(const std::filesystem::path &pdb_file, cons
 	bool needsUpdate = r.empty();
 	if (not needsUpdate)
 	{
-		auto file_date = parse_timestamp(r.front()[0].as<std::string>());
+		auto file_date = zeep::value_serializer<std::chrono::system_clock::time_point>::from_string(r.front()[0].as<std::string>());
 		needsUpdate = (scft - file_date) > 24h;
 	}
 
@@ -348,9 +365,10 @@ void databank_service::update_db_ref(const cif::datablock &db)
 
 	for (const auto &[db_code, db_name, acc] : db["struct_ref"].rows<std::string,std::string,std::string>("db_code", "db_name", "pdbx_db_accession"))
 	{
-		tx.exec0(
+		tx.exec(
 			R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
-			VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())");
+			VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())")
+			.no_rows();
 	}
 
 	tx.commit();

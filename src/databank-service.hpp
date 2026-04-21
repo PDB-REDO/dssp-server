@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <zeep/nvp.hpp>
+#include <zeep/el/serializer.hpp>
 
 #include <condition_variable>
 #include <chrono>
@@ -36,7 +36,7 @@
 #include <thread>
 #include <vector>
 
-#include <cif++.hpp>
+#include <cif++/cif++.hpp>
 
 class databank_service
 {
