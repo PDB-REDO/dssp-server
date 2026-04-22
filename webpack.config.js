@@ -41,7 +41,18 @@ module.exports = (env) => {
 					use: [
 						MiniCssExtractPlugin.loader,
 						"css-loader",
-						"sass-loader"
+						{
+							loader: "sass-loader",
+							options: {
+								sassOptions: {
+									silenceDeprecations: [
+										"color-functions",
+										"global-builtin",
+										"import",
+									]
+								}
+							}
+						}
 					]
 				},
 

@@ -2,6 +2,7 @@
 # pdb-dir=/srv/data/pdb/mmCIF/
 # dssp-dir=/srv/data/dssp/
 # legacy-dssp-dir=/srv/data/dssp-legacy/
+# 12-character-ids=true
 # update-threads=4
 # db-dbname=dssp-db
 # db-user=dssp-admin

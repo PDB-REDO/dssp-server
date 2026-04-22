@@ -26,6 +26,7 @@ cmake_minimum_required(VERSION 3.15)
 
 # set the project name
 project(dssp-server VERSION 1.1.0 LANGUAGES CXX)
+project(dssp-server VERSION 1.1.0 LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -33,7 +34,7 @@ include(CPM)
 include(GNUInstallDirs)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 endif()
 
 set(CONFIG_PATH "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
@@ -48,84 +49,90 @@ write_version_header("${PROJECT_SOURCE_DIR}/src")
 find_package(mrc QUIET)
 
 if(NOT MRC_FOUND)
-	message(FATAL_ERROR "dssp: Cannot use resources since mrc was not found")
+    message(FATAL_ERROR "dssp: Cannot use resources since mrc was not found")
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads)
 
-# find_package(nlohmann_json REQUIRED)
-find_package(mrc REQUIRED)
+if(NOT PDB_REDO_META)
+    find_package(mcfp 1.3.5 REQUIRED)
+    find_package(cifpp 10.0.3 REQUIRED)
 
-# CPMAddPackage("gh:HowardHinnant/date@3.0.3")
-CPMAddPackage("https://forge.hekkelman.net/maarten/mcfp.git@1.4.2")
-CPMAddPackage(NAME zeep
-	GIT_REPOSITORY "https://forge.hekkelman.net/maarten/zeep.git"
-	GIT_TAG 9959202
-	EXCLUDE_FROM_ALL YES)
-CPMAddPackage("https://forge.hekkelman.net/maarten/gxrio.git@1.0.2")
-CPMAddPackage(NAME cifpp
-	GIT_REPOSITORY https://github.com/pdb-redo/libcifpp.git
-	GIT_TAG v8.0.1
-	EXCLUDE_FROM_ALL YES)
-CPMAddPackage(NAME dssp
-	GIT_REPOSITORY https://github.com/pdb-redo/dssp.git
-	GIT_TAG 33805a2
-	EXCLUDE_FROM_ALL YES)
-CPMAddPackage(NAME libpqxx
-	GIT_REPOSITORY https://github.com/jtv/libpqxx.git
-	GIT_TAG 7.10.1
-	EXCLUDE_FROM_ALL YES)
+    find_package(zeep REQUIRED)
+    find_package(gxrio REQUIRED)
+
+    find_package(dssp 4.6.1 QUIET)
+
+    if(NOT dssp_FOUND)
+        if(EXISTS ${PROJECT_SOURCE_DIR}/dssp/CMakeLists.txt)
+            add_subdirectory(dssp EXCLUDE_FROM_ALL)
+        else()
+            message(FATAL_ERROR "libdssp was not found, please install manually or check out the git submodules")
+        endif()
+    endif()
+endif()
+
+# For the databank
+find_package(libpqxx 7.8.1 REQUIRED)
 
 find_program(YARN yarn REQUIRED)
 
 add_executable(dsspd
-	${PROJECT_SOURCE_DIR}/src/databank-service.cpp
-	${PROJECT_SOURCE_DIR}/src/db-connection.cpp
-	${PROJECT_SOURCE_DIR}/src/dssp-server.cpp)
+    ${PROJECT_SOURCE_DIR}/src/databank-service.cpp
+    ${PROJECT_SOURCE_DIR}/src/db-connection.cpp
+    ${PROJECT_SOURCE_DIR}/src/dssp-server.cpp)
 
 target_link_libraries(dsspd PRIVATE dssp::dssp zeep::zeep gxrio::gxrio
-	libpqxx::pqxx date::date mcfp::mcfp)
+    libpqxx::pqxx mcfp::mcfp)
 
 # yarn rules for javascripts
 set(webpack_input
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-style.scss
-	${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
-	${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js)
+    ${CMAKE_CURRENT_SOURCE_DIR}/webapp/pdb-redo-style.scss
+    ${CMAKE_CURRENT_SOURCE_DIR}/webapp/index.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js)
 
 set(webpack_output ${CMAKE_CURRENT_SOURCE_DIR}/docroot/scripts/index.js)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/node_modules
-	COMMAND ${YARN}
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	VERBATIM)
+    COMMAND ${YARN}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM)
 
 add_custom_command(OUTPUT ${webpack_output}
-	DEPENDS ${webpack_input} ${CMAKE_CURRENT_SOURCE_DIR}/node_modules
-	COMMAND ${YARN} run $<IF:$<CONFIG:Debug>,build,build-production>
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	VERBATIM)
+    DEPENDS ${webpack_input} ${CMAKE_CURRENT_SOURCE_DIR}/node_modules
+    COMMAND ${YARN} run $<IF:$<CONFIG:Debug>,build,build-production>
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    VERBATIM)
 
 add_custom_target(generate_webpack DEPENDS ${webpack_output})
 
 add_dependencies(dsspd generate_webpack)
 
-file(COPY_FILE
-	${dssp_SOURCE_DIR}/libdssp/mmcif_pdbx/dssp-extension.dic
-	${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic)
+message(NOTICE "dic: ${CIFPP_SHARE_DIR}/dssp-extension.dic")
+
+if(EXISTS "${CIFPP_SHARE_DIR}/dssp-extension.dic")
+    file(COPY_FILE
+        ${CIFPP_SHARE_DIR}/dssp-extension.dic
+        ${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic)
+else()
+    file(COPY_FILE
+        ${dssp_SOURCE_DIR}/libdssp/mmcif_pdbx/dssp-extension.dic
+        ${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic)
+endif()
 
 mrc_target_resources(dsspd
-	${cifpp_SOURCE_DIR}/rsrc/mmcif_pdbx.dic
-	${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic
-	${PROJECT_SOURCE_DIR}/docroot/)
+    ${CIFPP_SHARE_DIR}/mmcif_pdbx.dic
+    ${CMAKE_CURRENT_BINARY_DIR}/dssp-extension-built-in.dic
+    ${PROJECT_SOURCE_DIR}/docroot/)
 
 # Install rules
 install(TARGETS dsspd
-	EXPORT dsspTargets
-	RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
+    EXPORT dsspTargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
 
 if(LINUX)
-	configure_file(dsspd.service.in ${CMAKE_CURRENT_BINARY_DIR}/dsspd.service @ONLY)
-	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/dsspd.service" DESTINATION "/etc/systemd/system")
+    configure_file(dsspd.service.in ${CMAKE_CURRENT_BINARY_DIR}/dsspd.service @ONLY)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/dsspd.service" DESTINATION "/etc/systemd/system")
 endif()
