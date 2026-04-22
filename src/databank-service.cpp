@@ -25,16 +25,17 @@
  */
 
 #include "databank-service.hpp"
+
 #include "db-connection.hpp"
 #include "dssp.hpp"
 
 #include <chrono>
-#include <cif++.hpp>
-
-#include <mcfp/mcfp.hpp>
-
+#include <cif++/cif++.hpp>
 #include <functional>
 #include <iostream>
+#include <mcfp/mcfp.hpp>
+#include <memory>
+#include <mutex>
 #include <queue>
 #include <stdexcept>
 #include <tuple>
@@ -54,6 +55,7 @@ databank_service::databank_service()
 
 	m_dssp_dir = config.get("dssp-dir");
 	m_pdb_dir = config.get("pdb-dir");
+	m_12_character_ids = config.has("12-character-ids");
 
 	std::error_code ec;
 	if (not fs::exists(m_dssp_dir, ec))
@@ -91,7 +93,22 @@ databank_service::~databank_service()
 	m_cv.notify_all();
 
 	for (auto &t : m_threads)
-		t.join();
+	{
+		if (t.joinable())
+			t.join();
+	}
+}
+
+void databank_service::update_and_stop()
+{
+	m_stop_when_done = true;
+	m_cv.notify_all();
+
+	for (auto &t : m_threads)
+	{
+		if (t.joinable())
+			t.join();
+	}
 }
 
 void databank_service::submit_db_request(const std::string &pdb_id)
@@ -104,7 +121,7 @@ void databank_service::submit_db_request(const std::string &pdb_id)
 
 void databank_service::run()
 {
-	using namespace std::literals;
+	using namespace std::chrono_literals;
 
 	while (not m_stop)
 	{
@@ -123,10 +140,13 @@ void databank_service::run()
 					scan();
 					m_last_scan = std::chrono::system_clock::now();
 				}
+				else if (m_stop_when_done)
+					m_stop = true;
 				else
 					m_cv.wait_for(lock, 1s);
 
-				continue;
+				if (m_stop or m_queue.empty())
+					continue;
 			}
 
 			next = m_queue.top();
@@ -230,7 +250,6 @@ void databank_service::run()
 				std::cerr << "Error creating " << legacy_dssp_file.string() << ": " << ex.what() << std::endl;
 				fs::remove(dssp_file, ec);
 			}
-			
 		}
 		catch (const std::exception &ex)
 		{
@@ -280,17 +299,19 @@ void databank_service::scan()
 
 fs::path databank_service::get_pdb_file_for_pdb_id(const std::string &pdb_id) const
 {
-	return m_pdb_dir / pdb_id.substr(1, 2) / (pdb_id + ".cif.gz");
+	return m_12_character_ids
+	           ? m_pdb_dir / pdb_id.substr(pdb_id.length() - 3, 2) / pdb_id / "structures" / (pdb_id + ".cif.gz")
+	           : m_pdb_dir / pdb_id.substr(1, 2) / (pdb_id + ".cif.gz");
 }
 
 fs::path databank_service::get_dssp_file_for_pdb_id(const std::string &pdb_id) const
 {
-	return m_dssp_dir / pdb_id.substr(1, 2) / (pdb_id + ".cif.gz");
+	return m_dssp_dir / pdb_id.substr(pdb_id.length() - 3, 2) / (pdb_id + ".cif.gz");
 }
 
 fs::path databank_service::get_legacy_dssp_file_for_pdb_id(const std::string &pdb_id) const
 {
-	return m_legacy_dssp_dir.empty() ? fs::path{} : m_legacy_dssp_dir / pdb_id.substr(1, 2) / (pdb_id + ".dssp");
+	return m_legacy_dssp_dir.empty() ? fs::path{} : m_legacy_dssp_dir / pdb_id.substr(pdb_id.length() - 3, 2) / (pdb_id + ".dssp");
 }
 
 bool databank_service::needs_update(const std::string &pdb_id) const
@@ -366,8 +387,9 @@ void databank_service::update_db_ref(const cif::datablock &db)
 	for (const auto &[db_code, db_name, acc] : db["struct_ref"].rows<std::string,std::string,std::string>("db_code", "db_name", "pdbx_db_accession"))
 	{
 		tx.exec(
-			R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
-			VALUES ()" + tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())")
+			  R"(INSERT INTO pdb_db_ref (pdb_id, db_code, db_name, db_accession)
+			VALUES ()" +
+			  tx.quote(pdb_id) + ", " + tx.quote(db_code) + ", " + tx.quote(db_name) + ", " + tx.quote(acc) + R"())")
 			.no_rows();
 	}
 

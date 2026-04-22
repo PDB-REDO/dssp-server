@@ -49,8 +49,16 @@ class databank_service
 
 	// void check_ref_info(const std::string &pdb_id) const;
 
-	std::filesystem::path get(const std::string &pdb_id, const std::string &format)
+	std::filesystem::path get(std::string pdb_id, const std::string &format)
 	{
+		if (m_12_character_ids and not pdb_id.starts_with("pdb_"))
+		{
+			if (pdb_id.length() == 4)
+				pdb_id = "pdb_0000" + pdb_id;
+			else
+				pdb_id = "pdb_" + pdb_id;
+		}
+
 		if (format == "dssp")
 			return get_legacy_dssp_file_for_pdb_id(pdb_id);
 		else if (format == "mmcif")
@@ -60,6 +68,8 @@ class databank_service
 	}
 
 	// std::vector<pdb_entry> get_entries_for_code_or_acc(const std::string &acc) const;
+
+	void update_and_stop();
 
   private:
 	databank_service();
@@ -76,12 +86,15 @@ class databank_service
 	std::filesystem::path get_dssp_file_for_pdb_id(const std::string &pdb_id) const;
 	std::filesystem::path get_legacy_dssp_file_for_pdb_id(const std::string &pdb_id) const;
 
+	bool m_12_character_ids = false;
+
 	std::filesystem::path m_pdb_dir;
 	std::filesystem::path m_dssp_dir;
 	std::filesystem::path m_legacy_dssp_dir;
 
 	int m_inotify_fd;
 	bool m_stop = false;
+	bool m_stop_when_done = false;
 
 	struct entry
 	{
