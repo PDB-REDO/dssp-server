@@ -27,14 +27,11 @@
 #include "databank-service.hpp"
 #include "db-connection.hpp"
 #include "dssp.hpp"
-
 #include "revision.hpp"
 
 #include <cif++/cif++.hpp>
-
 #include <gxrio.hpp>
 #include <mcfp/mcfp.hpp>
-
 #include <zeep/http/daemon.hpp>
 #include <zeep/http/html-controller.hpp>
 #include <zeep/streambuf.hpp>
@@ -67,16 +64,16 @@ class dssp_controller : public zeep::http::html_controller
 		map_post_request("do", &dssp_controller::work, "data", "format");
 	}
 
-	zeep::http::reply get(const zeep::http::scope& scope, std::string pdb_id, std::optional<std::string> format);
+	zeep::http::reply get(const zeep::http::scope &scope, std::string pdb_id, std::optional<std::string> format);
 
-	zeep::http::reply db_mmcif(const zeep::http::scope& scope, std::string pdb_id);
-	zeep::http::reply db_legacy(const zeep::http::scope& scope, std::string pdb_id);
+	zeep::http::reply db_mmcif(const zeep::http::scope &scope, std::string pdb_id);
+	zeep::http::reply db_legacy(const zeep::http::scope &scope, std::string pdb_id);
 
 	// REST call
 	zeep::http::reply work(const zeep::http::file_param &coordinates, std::optional<std::string> format);
 };
 
-zeep::http::reply dssp_controller::db_mmcif(const zeep::http::scope& scope, std::string pdb_id)
+zeep::http::reply dssp_controller::db_mmcif(const zeep::http::scope &scope, std::string pdb_id)
 {
 	zeep::to_lower(pdb_id);
 
@@ -93,7 +90,7 @@ zeep::http::reply dssp_controller::db_mmcif(const zeep::http::scope& scope, std:
 		return reply;
 	}
 
-	zeep::http::reply rep(zeep::http::ok, {1, 1});
+	zeep::http::reply rep(zeep::http::ok, { 1, 1 });
 
 	if (file.extension() != ".gz")
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
@@ -107,8 +104,8 @@ zeep::http::reply dssp_controller::db_mmcif(const zeep::http::scope& scope, std:
 		cif::gzio::ifstream in(file);
 
 		if (not in.is_open())
-			return zeep::http::reply(zeep::http::not_found, {1, 1});
-		
+			return zeep::http::reply(zeep::http::not_found, { 1, 1 });
+
 		std::stringstream os;
 		os << in.rdbuf();
 
@@ -124,7 +121,7 @@ zeep::http::reply dssp_controller::db_mmcif(const zeep::http::scope& scope, std:
 	return rep;
 }
 
-zeep::http::reply dssp_controller::db_legacy(const zeep::http::scope& scope, std::string pdb_id)
+zeep::http::reply dssp_controller::db_legacy(const zeep::http::scope &scope, std::string pdb_id)
 {
 	zeep::to_lower(pdb_id);
 
@@ -141,7 +138,7 @@ zeep::http::reply dssp_controller::db_legacy(const zeep::http::scope& scope, std
 		return reply;
 	}
 
-	zeep::http::reply rep(zeep::http::ok, {1, 1});
+	zeep::http::reply rep(zeep::http::ok, { 1, 1 });
 
 	if (file.extension() != ".gz")
 		rep.set_content(new std::ifstream(file, std::ios::binary), "text/plain");
@@ -155,8 +152,8 @@ zeep::http::reply dssp_controller::db_legacy(const zeep::http::scope& scope, std
 		cif::gzio::ifstream in(file);
 
 		if (not in.is_open())
-			return zeep::http::reply(zeep::http::not_found, {1, 1});
-		
+			return zeep::http::reply(zeep::http::not_found, { 1, 1 });
+
 		std::stringstream os;
 		os << in.rdbuf();
 
@@ -172,7 +169,7 @@ zeep::http::reply dssp_controller::db_legacy(const zeep::http::scope& scope, std
 	return rep;
 }
 
-zeep::http::reply dssp_controller::get(const zeep::http::scope& scope, std::string pdb_id, std::optional<std::string> format)
+zeep::http::reply dssp_controller::get(const zeep::http::scope &scope, std::string pdb_id, std::optional<std::string> format)
 {
 	zeep::to_lower(pdb_id);
 
@@ -270,7 +267,7 @@ zeep::http::reply dssp_controller::work(const zeep::http::file_param &coordinate
 int main(int argc, char *argv[])
 {
 	using namespace std::literals;
-	
+
 	cif::compound_factory::init(true);
 
 	int result = 0;
@@ -293,6 +290,7 @@ int main(int argc, char *argv[])
 		mcfp::make_option<std::string>("dssp-dir", "Directory containing the DSSP databank files"),
 		mcfp::make_option<std::string>("legacy-dssp-dir", "Directory containing the DSSP databank files in legacy format"),
 		mcfp::make_option<unsigned>("update-threads", 1, "Number of update threads to run simultaneously"),
+		mcfp::make_option("12-character-ids", "Use new 12 character PDB ID's"),
 
 		mcfp::make_option<std::string>("db-dbname", "dssp-db name"),
 		mcfp::make_option<std::string>("db-user", "dssp-db owner"),
@@ -344,50 +342,59 @@ int main(int argc, char *argv[])
 
 	// --------------------------------------------------------------------
 
-	std::string user = config.get<std::string>("user");
-	std::string address = config.get<std::string>("address");
-	uint16_t port = config.get<uint16_t>("port");
-
-	zeep::http::daemon server([&, context = config.get("context")]()
-		{
-		db_connection::init();
-		databank_service::instance();
-
-		auto s = new zeep::http::server();
-
-#ifndef NDEBUG
-		s->set_template_processor(new zeep::http::file_based_html_template_processor("docroot"));
-#else
-		s->set_template_processor(new zeep::http::rsrc_based_html_template_processor());
-#endif
-		s->add_controller(new dssp_controller());
-
-		s->set_context_name(context);
-
-		return s; },
-		"dsspd");
-
 	std::string command = config.operands().front();
 
-	if (command == "start")
+	if (command == "update-db")
 	{
-		std::cout << "starting server at http://" << address << ':' << port << '/' << std::endl;
-
-		if (config.has("no-daemon"))
-			result = server.run_foreground(address, port);
-		else
-			result = server.start(address, port, 1, 10, user);
+		db_connection::init();
+		databank_service &ds = databank_service::instance();
+		ds.update_and_stop();
 	}
-	else if (command == "stop")
-		result = server.stop();
-	else if (command == "status")
-		result = server.status();
-	else if (command == "reload")
-		result = server.reload();
 	else
 	{
-		std::cerr << "Invalid command" << std::endl;
-		result = 1;
+		std::string user = config.get<std::string>("user");
+		std::string address = config.get<std::string>("address");
+		uint16_t port = config.get<uint16_t>("port");
+
+		zeep::http::daemon server([&, context = config.get("context")]()
+			{
+				db_connection::init();
+				databank_service::instance();
+		
+				auto s = new zeep::http::server();
+
+#ifndef NDEBUG
+				s->set_template_processor(new zeep::http::file_based_html_template_processor("docroot"));
+#else
+				s->set_template_processor(new zeep::http::rsrc_based_html_template_processor());
+#endif
+				s->add_controller(new dssp_controller());
+		
+				s->set_context_name(context);
+		
+				return s; },
+			"dsspd");
+
+		if (command == "start")
+		{
+			std::cout << "starting server at http://" << address << ':' << port << '/' << std::endl;
+
+			if (config.has("no-daemon"))
+				result = server.run_foreground(address, port);
+			else
+				result = server.start(address, port, 1, 10, user);
+		}
+		else if (command == "stop")
+			result = server.stop();
+		else if (command == "status")
+			result = server.status();
+		else if (command == "reload")
+			result = server.reload();
+		else
+		{
+			std::cerr << "Invalid command" << std::endl;
+			result = 1;
+		}
 	}
 
 	return result;

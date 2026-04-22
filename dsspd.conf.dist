@@ -2,12 +2,10 @@
 # pdb-dir=/srv/data/pdb/mmCIF/
 # dssp-dir=/srv/data/dssp/
 # legacy-dssp-dir=/srv/data/dssp-legacy/
+# 12-character-ids=true
 # update-threads=4
 # db-dbname=dssp-db
 # db-user=dssp-admin
 # db-password=*********
 # db-host=localhost
 # db-port=5432
-# First, the pdb id matched agaist: ^(?:pdb_)?([0-9a-z]{0,4}[0-9a-z]([0-9a-z]{2})[0-9a-z])$
-pdb-file=/DATA/pdb8/${2}/pdb_${1}/structures/pdb_${1}.cif.gz
-dssp-file=/
